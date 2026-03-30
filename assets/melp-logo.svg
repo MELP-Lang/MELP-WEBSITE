@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="10" fill="#21252b"/>
-  <text x="32" y="44" font-family="monospace" font-size="28" font-weight="bold"
-        text-anchor="middle" fill="#528bff">M</text>
-  <rect x="8" y="50" width="48" height="3" rx="1.5" fill="#528bff" opacity="0.4"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Üst köşeler r=60, alt köşeler r=80 (orta sütun max r=62) -->
+  <path d="M46 146C46 112.863 72.8629 86 106 86H172.383V347C172.383 391.184 136.567 427 92.383 427H46V146Z" fill="#323030"/>
+  <path d="M192.808 86H319.191V365C319.191 399.24 291.43 427 257.191 427H254.808C220.568 427 192.808 399.24 192.808 365V86Z" fill="#323030"/>
+  <path d="M339.617 86H406C439.137 86 466 112.863 466 146V427H419.617C375.433 427 339.617 391.184 339.617 347V86Z" fill="#323030"/>
 </svg>

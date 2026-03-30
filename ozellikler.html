@@ -13,13 +13,8 @@
   <header>
     <nav>
       <a href="index.html" class="nav-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-          <rect width="64" height="64" rx="10" fill="#21252b"/>
-          <text x="32" y="44" font-family="monospace" font-size="28" font-weight="bold"
-                text-anchor="middle" fill="#528bff">M</text>
-          <rect x="8" y="50" width="48" height="3" rx="1.5" fill="#528bff" opacity="0.4"/>
-        </svg>
-        MELP
+        <img src="assets/melp-logo.svg" alt="MELP Logo" width="32" height="32">
+        MELP <span style="font-size:0.7em; font-weight:400; opacity:0.6;">(alfa)</span>
       </a>
       <ul class="nav-links" id="navLinks">
         <li><a href="index.html">Ana Sayfa</a></li>
@@ -49,7 +44,7 @@
          1. ÇOK DİLLİ YAZIM
          ==================================================== -->
     <section class="feature-section">
-      <h2>🌍 1. Çok Dilli, Çok Sentaksli Yazım</h2>
+      <h2>🌍 1. Çok Dilli, Çok Sentakslı Yazım</h2>
       <p>
         MELP'te program mantığı dilden ve sözdizimi stilinden bağımsızdır. Aynı derleyici Türkçe,
         İngilizce, Rusça veya Japonca kaynak dosyasını okuyabilir. Yeni bir dil eklemek için tek
@@ -120,7 +115,7 @@
          2. MEMORY SAFE — GC'SİZ
          ==================================================== -->
     <section class="feature-section">
-      <h2>🛡️ 2. Memory Safe — GC'siz, Annotation'sız</h2>
+      <h2>🛡️ 2. Memory Safe — GC'siz, Annotation'sız <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">Beta</span></h2>
       <p>
         MELP, varsayılan olarak global durum oluşturmaya izin vermez. Bu tek kural
         sayesinde bellek sızıntısı derleyici düzeyinde imkânsız hale gelir —
@@ -179,7 +174,7 @@
          3. EOK — EN ÖNEMLİ BÖLÜM
          ==================================================== -->
     <section class="feature-section">
-      <h2>🔐 3. Yapısal Binary Güvenliği — EOK</h2>
+      <h2>🔐 3. Yapısal Binary Güvenliği — EOK <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">Beta</span></h2>
       <p style="font-size:1.1rem;font-weight:600;color:var(--text-primary);margin-bottom:1.5rem;">
         Binary'e sahip olmak, mantığa sahip olmak anlamına gelmez.
       </p>
@@ -189,7 +184,7 @@
         açtığında programın mantığı büyük ölçüde okunabilir.
       </p>
       <p>
-        MELP farklı çalışır. EOK (Endeksle Örtülü Koruma) mimarisinde binary, gerçek semboller
+        MELP farklı çalışır. EOK (Encryptic OK) mimarisinde binary, gerçek semboller
         yerine yalnızca indeks numaraları içerir. Bu indekslerin anlam tablosuna — "anahtar"a —
         sahip olmadan binary çalıştırılamaz, tersine mühendislik yapılamaz.
       </p>
@@ -320,10 +315,252 @@ melp_compiler ornek.mlp -o a.out
     </section>
 
     <!-- ====================================================
-         6. ÖZ-DERLEME HEDEFİ
+         7. FBO — STRATEJİ HAVUZU
          ==================================================== -->
     <section class="feature-section">
-      <h2>🎯 6. Öz-Derleme Hedefi</h2>
+      <h2>📦 7. OK Katmanı — STO · SAO · FBO <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">Beta</span></h2>
+      <p>
+        MELP derleme hattının optimizasyon omurgası üç katmandan oluşur:
+        <strong>STO</strong> (Smart Type Optimization) tip çıkarımını,
+        <strong>SAO</strong> (Semantic-Aware Optimization) erişim örüntülerini analiz eder;
+        <strong>FBO</strong> (Frontend-Backend Optimization) ise semantii 32-bit indekse indirger.
+        Modüller arası transfer yalnızca 4 byte indekstir; kütüphane seyahat etmez.
+      </p>
+      <div class="eok-box">
+        <div style="margin-bottom:0.75rem;"><span class="label-red">Geleneksel yaklaşım:</span></div>
+        <div style="margin-left:1rem;">modül A → modül B: [fonksiyon kodu + bağımlılıklar + veri]</div>
+        <div style="margin:1rem 0 0.75rem;"><span class="label-green">MELP FBO:</span></div>
+        <div style="margin-left:1rem;">modül A → modül B: <strong>0x002A</strong> → "math.sqrt stratejisini kullan"</div>
+      </div>
+      <div class="info-box">
+        <p>
+          32-bit indeks alanı: <strong>4.294.967.296</strong> giriş kapasitesi.
+          EOK güvenlik katmanının ve ROK çalışma zamanı optimizasyonunun matematiksel temelidir.
+          Erişim O(1) L1 cache hit; performans maliyeti neredeyse sıfıra yakındır.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         8. STATE — FBO ÇALIŞMA ZAMANI UZANTISI
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>🔁 8. State — FBO'nun Çalışma Zamanı Uzantısı <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">Beta</span></h2>
+      <p>
+        Geleneksel dillerde state geçişi maliyetlidir: veri kopyalanır, bağımlılıklar taşınır, bellek sızar.
+        MELP'te state FBO tablosunun bir indeksidir — modüller arası geçiş 4 byte, erişim O(1).
+      </p>
+      <p>
+        MELP state'i yasaklamaz, onu <strong>görünür</strong> kılar.
+        <code class="inline">state.init()</code> ve <code class="inline">state.close()</code>
+        ile state nerede başlar nerede biter açık olur.
+      </p>
+      <div class="code-panel" style="max-width:520px;">
+        <div class="code-panel-header"><span class="lang-dot"></span>MELP — State</div>
+        <pre><code><span class="kw">import</span> state
+
+<span class="kw">numeric function</span> <span class="fn">sayac</span>()
+    state.<span class="fn">init</span>()
+    <span class="kw">numeric</span> n = state.<span class="fn">get</span>(<span class="str">"n"</span>; 0)
+    state.<span class="fn">set</span>(<span class="str">"n"</span>; n + 1)
+    state.<span class="fn">close</span>()
+    <span class="kw">return</span> n
+<span class="kw">end function</span></code></pre>
+      </div>
+      <div class="info-box">
+        <p>
+          <strong>Planlanan: Stage 7.</strong> Mevcut sürümde FBO altyapısı aktif;
+          state modülü beta sürümüyle birlikte devreye girer.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         9. TİP SİSTEMİ
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>🔢 9. Tip Sistemi — 3 Tip, Sıfır Tip Derdi</h2>
+      <p>
+        MELP'te yalnızca <strong>üç değişken tipi</strong> vardır:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Tip</th><th>Alt Yapı</th><th>Kapsam</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code class="inline">numeric</code></td><td>BigDecimal</td><td>1 bit’ten binlerce byte’a kadar her sayı</td></tr>
+            <tr><td><code class="inline">string</code></td><td>BigString</td><td>Herhangi bir uzunlukta metin</td></tr>
+            <tr><td><code class="inline">boolean</code></td><td>—</td><td>doğru / yanlış</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Klasik dillerde programcı “bu değişkene <code>int8</code> mi, <code>int64</code> mi,
+        <code>float</code> mı <code>double</code> mı ayırmalıyım?” derdine düşer.
+        MELP’te bu dert yoktur. Kullanıcının tek yaptığı ihtiyacını olan tipi tanımlamaktır:
+      </p>
+      <div class="code-panel" style="max-width:520px;">
+        <div class="code-panel-header"><span class="lang-dot"></span>MELP — Tip Tanımı</div>
+        <pre><code><span class="kw">numeric</span> kucuk   = 1              <span class="cm">-- STO: 1 bit yeterli, öyle depolar</span>
+<span class="kw">numeric</span> buyuk   = 9999999999999  <span class="cm">-- STO: gereken byte’ı otomatik seçer</span>
+<span class="kw">numeric</span> pi      = 3,14159265358979323846
+<span class="kw">numeric</span> miktar  = 1.000.000,45   <span class="cm">-- Noktalı binlik ayraç</span>
+<span class="kw">string</span>  mesaj   = <span class="str">"Merhaba"</span>
+<span class="kw">boolean</span> aktif   = <span class="kw">true</span></code></pre>
+      </div>
+      <div class="info-box">
+        <p>
+          <strong>STO (Smart Type Optimization)</strong> derleme zamanında değişkenin gerçek
+          kullanımını analiz eder ve bellekte <em>minimum yer kaplayacak</em> şekilde temsil eder.
+          İster 1 bit’lik bir bayrak, ister binlerce byte’lık bir sayı olsun —
+          STO bunu kullanıcı adına otomatik çözer. IEEE 754 kısıtı yoktur;
+          finansal ve akademik hesaplamalar RAM sınırına kadar %100 doğrulukla çalışır.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         10. DEBUG
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>🐛 10. Yerleşik <code style="font-size:inherit;">debug</code> Anahtar Kelimesi</h2>
+      <p>
+        Kaynak kodda hata noktası işaretlemek için ayrı kütüphane ya da araç gerekmez.
+        <code class="inline">debug</code> dil düzeyinde bir anahtar kelimedir.
+        Üretim derlemesinde (<code class="inline">--release</code>) sıfır maliyet —
+        kod ve sembol üretilmez.
+      </p>
+      <div class="code-panel" style="max-width:480px;">
+        <div class="code-panel-header"><span class="lang-dot"></span>MELP — Debug</div>
+        <pre><code><span class="kw">function</span> <span class="fn">hesapla</span>(x)
+    debug  <span class="cm">-- burada dur, değerleri göster</span>
+    <span class="kw">return</span> x * 2
+<span class="kw">end function</span></code></pre>
+      </div>
+      <div class="info-box">
+        <p>
+          <code class="inline">--release</code> ile derlendiginde tüm
+          <code class="inline">debug</code> ifadeleri derleme zamanında kaldırılır.
+          Üretim binary'inde sıfır iz.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         11. ÖLÜ MODÜL FELSEFESİ
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>💀 11. Ölü Modül Felsefesi</h2>
+      <p>
+        Stateless-first mimarinin doğal sonucu: modüller varsayılan olarak <strong>ölüdür</strong>.
+        Hiçbir modül kendi başına kaynak tahsis etmez ya da bellekte yer kaplamaz.
+        Bir modülü <em>kullanan</em> modül diriltir ve iş bitince öldürür —
+        atıl kaynak sıfır, çöp toplayıcıya gerek yoktur.
+      </p>
+      <div class="info-box">
+        <p>
+          <strong>Sonuç:</strong> Memory leak derleyici düzeyinde imkânsızdır —
+          GC veya borrow checker olmadan. Bellekte tutulan tek şey 4-byte FBO indeksidir;
+          nesnenin kendisi seyahat etmez.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         12. ADLANDIRILMIŞ KAPSAMLAR
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>📌 12. Adlandırılmış Kapsamlar — <code style="font-size:inherit;">scope</code></h2>
+      <p>
+        <code class="inline">scope ad</code> ile iç içe bloktan temiz koşullu çıkış sağlanır.
+        Derin döngülerde bayrak değişkeni ya da exception gerekmez.
+      </p>
+      <div class="code-panel" style="max-width:520px;">
+        <div class="code-panel-header"><span class="lang-dot"></span>MELP — Scope</div>
+        <pre><code><span class="kw">scope</span> islem
+    <span class="kw">for</span> i = 0 <span class="kw">to</span> 100
+        <span class="kw">for</span> j = 0 <span class="kw">to</span> 100
+            <span class="kw">if</span> bul(i; j) <span class="kw">then</span>
+                <span class="kw">exit scope</span> islem  <span class="cm">-- iç içe döngüden temiz çıkış</span>
+            <span class="kw">end if</span>
+        <span class="kw">end for</span>
+    <span class="kw">end for</span>
+<span class="kw">end scope</span></code></pre>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         13. STRUCT + FONKSİYON
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>🧱 13. Struct + Fonksiyon — Class Yok</h2>
+      <p>
+        MELP'te veri <code class="inline">struct</code> ile, davranış bağımsız fonksiyonlarla tanımlanır.
+        OOP hiyerarşisi olmadan aynı modelleme gücü, çok daha az karmaşıklık.
+      </p>
+      <div class="code-panel" style="max-width:480px;">
+        <div class="code-panel-header"><span class="lang-dot"></span>MELP — Struct + Enum + Match</div>
+        <pre><code><span class="kw">struct</span> Nokta
+    <span class="kw">numeric</span> x
+    <span class="kw">numeric</span> y
+<span class="kw">end struct</span>
+
+<span class="kw">enum</span> Renk
+    Kirmizi
+    Yesil
+    Mavi
+<span class="kw">end enum</span>
+
+<span class="kw">match</span> renk
+<span class="kw">case</span> Kirmizi
+    <span class="fn">print</span>(<span class="str">"kırmızı"</span>)
+<span class="kw">end case</span>
+<span class="kw">end match</span></code></pre>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         10. MODÜLER MİMARİ
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>🗂️ 14. Modüler Mimari</h2>
+      <p>
+        Her modül tek sorumluluğa sahiptir; merkezi orkestratör yasaktır.
+        Derleme sırası otomatik dependency graph'tan belirlenir — döngüsel bağımlılık
+        derleme zamanında hata olarak raporlanır.
+      </p>
+      <div class="info-box">
+        <p>
+          <strong>Tasarım İlkesi:</strong> Modüller arasında doğrudan state paylaşımı yoktur.
+          İletişim FBO indeksleri üzerinden gerçekleşir; bu mimari EOK güvenliğini ve
+          stateless-first felsefesini pekiştirir.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         11. PLATFORM BAĞIMSIZ
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>🌐 15. Platform Bağımsız <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">Beta</span></h2>
+      <p>
+        Bir kere yaz, her yerde çalıştır. LLVM altyapısı sayesinde aynı kaynak kod
+        Linux, macOS ve Windows için native binary üretir. Çapraz derleme için ayrı araç gerekmez.
+      </p>
+      <div class="info-box">
+        <p>
+          <strong>Mevcut durum:</strong> Linux x86-64 tam desteklenmektedir.
+          macOS ve Windows desteği beta sürümüyle birlikte gelecektir.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         12. ÖZ-DERLEME HEDEFİ
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>🎯 16. Öz-Derleme Hedefi</h2>
       <p>
         v1.0 milstonunda MELP derleyicisi kendini MELP ile derleyecektir.
         Bu hedefe "self-hosting" denir ve bir dilin olgunluk göstergesidir.

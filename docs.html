@@ -13,13 +13,8 @@
   <header>
     <nav>
       <a href="index.html" class="nav-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-          <rect width="64" height="64" rx="10" fill="#21252b"/>
-          <text x="32" y="44" font-family="monospace" font-size="28" font-weight="bold"
-                text-anchor="middle" fill="#528bff">M</text>
-          <rect x="8" y="50" width="48" height="3" rx="1.5" fill="#528bff" opacity="0.4"/>
-        </svg>
-        MELP
+        <img src="assets/melp-logo.svg" alt="MELP Logo" width="32" height="32">
+        MELP <span style="font-size:0.7em; font-weight:400; opacity:0.6;">(alfa)</span>
       </a>
       <ul class="nav-links" id="navLinks">
         <li><a href="index.html">Ana Sayfa</a></li>
@@ -112,15 +107,15 @@ bin/melp_compiler program.mlp -o program</code></pre>
               <tr><th>Kural</th><th>Doğru ✅</th><th>Yanlış ❌</th></tr>
             </thead>
             <tbody>
-              <tr><td>Parametre ayırıcı</td><td><code class="inline">func(a; b; c)</code></td><td><code class="inline">func(a, b, c)</code></td></tr>
+              <tr><td>Parametre ayırıcı</td><td><code class="inline">fonksiyon(a; b; c)</code></td><td><code class="inline">fonksiyon(a, b, c)</code></td></tr>
               <tr><td>Dizi literali</td><td><code class="inline">[1; 2; 3]</code></td><td><code class="inline">[1, 2, 3]</code></td></tr>
               <tr><td>Satır sonu yok</td><td><code class="inline">x = 42</code></td><td><code class="inline">x = 42;</code></td></tr>
-              <tr><td>Blok sonlandırıcı</td><td><code class="inline">end function</code></td><td><code class="inline">end_function</code></td></tr>
-              <tr><td>if → then zorunlu</td><td><code class="inline">if x &gt; 0 then</code></td><td><code class="inline">if x &gt; 0</code></td></tr>
-              <tr><td>else if</td><td><code class="inline">else if x &gt; 0 then</code></td><td><code class="inline">elif x &gt; 0</code></td></tr>
-              <tr><td>Döngüden çıkış</td><td><code class="inline">exit</code></td><td><code class="inline">break</code></td></tr>
+              <tr><td>Blok sonlandırıcı</td><td><code class="inline">fonksiyon sonu</code></td><td><code class="inline">fonksiyon_sonu</code></td></tr>
+              <tr><td>koşul → ise zorunlu</td><td><code class="inline">koşul x &gt; 0 ise</code></td><td><code class="inline">koşul x &gt; 0</code></td></tr>
+              <tr><td>değilse koşul</td><td><code class="inline">değilse koşul x &gt; 0 ise</code></td><td><code class="inline">elif x &gt; 0</code></td></tr>
+              <tr><td>Döngüden çıkış</td><td><code class="inline">çık</code></td><td><code class="inline">break</code></td></tr>
               <tr><td>Yorum</td><td><code class="inline">-- yorum</code></td><td><code class="inline">// yorum</code></td></tr>
-              <tr><td>Mantıksal operatör</td><td><code class="inline">and</code>, <code class="inline">or</code>, <code class="inline">not</code></td><td><code class="inline">&amp;&amp;</code>, <code class="inline">||</code>, <code class="inline">!</code></td></tr>
+              <tr><td>Mantıksal operatör</td><td><code class="inline">ve</code>, <code class="inline">veya</code>, <code class="inline">değil</code></td><td><code class="inline">&amp;&amp;</code>, <code class="inline">||</code>, <code class="inline">!</code></td></tr>
               <tr><td>Modulo</td><td><code class="inline">x mod y</code></td><td><code class="inline">x % y</code></td></tr>
             </tbody>
           </table>
@@ -142,32 +137,25 @@ bin/melp_compiler program.mlp -o program</code></pre>
             </tbody>
           </table>
         </div>
-        <pre><code>numeric x = 42
-numeric pi = 3,14
-string name = "MELP"
-boolean ok = true
-string empty = null
-
--- Türkçe karşılıkları:
--- sayısal x = 42
--- sayısal pi = 3,14
--- metin isim = "MELP"
--- mantıksal tamam = doğru
--- metin boşDeğer = boş</code></pre>
+        <pre><code>sayısal x = 42
+sayısal pi = 3,14
+metin isim = "MELP"
+mantıksal tamam = doğru
+metin boşDeğer = boş</code></pre>
 
         <!-- DEĞİŞKENLER -->
         <h2 id="degiskenler">Değişkenler</h2>
-        <pre><code>numeric count = 10
-string lang = "MELP"
-boolean enabled = true
+        <pre><code>sayısal sayaç = 10
+metin dil = "MELP"
+mantıksal aktif = doğru
 
 -- Yeniden atama — tip anahtarı yok
-count = count + 1
-lang = "Turkish MELP"
+sayaç = sayaç + 1
+dil = "Türkçe MELP"
 
 -- Sabit
-const numeric MAX = 1000
-const string APP = "MELP"</code></pre>
+sabit sayısal MAX = 1000
+sabit metin UYGULAMA = "MELP"</code></pre>
 
         <!-- OPERATÖRLER -->
         <h2 id="operatorler">Operatörler</h2>
@@ -187,118 +175,118 @@ x &lt;= y
 x &gt;= y</code></pre>
 
         <h3>Mantıksal</h3>
-        <pre><code>x and y
-x or y
-not x</code></pre>
+        <pre><code>x ve y
+x veya y
+değil x</code></pre>
 
-        <h3>String Birleştirme</h3>
-        <pre><code>string full = "Hello, " + name + "!"</code></pre>
+        <h3>Metin Birleştirme</h3>
+        <pre><code>metin tam = "Merhaba, " + isim + "!"</code></pre>
 
         <!-- KOŞULLAR -->
         <h2 id="kosullar">Koşullar</h2>
-        <pre><code>if score >= 90 then
-    print("A")
-else if score >= 80 then
-    print("B")
-else
-    print("C")
-end if</code></pre>
+        <pre><code>koşul puan >= 90 ise
+    yazdır("A")
+değilse koşul puan >= 80 ise
+    yazdır("B")
+yoksa
+    yazdır("C")
+koşul sonu</code></pre>
 
         <!-- DÖNGÜLER -->
         <h2 id="donguler">Döngüler</h2>
-        <h3>Koşullu Döngü (while-style)</h3>
-        <pre><code>numeric i = 0
-loop i &lt; 10
-    print(i)
+        <h3>Koşullu Döngü (while-stili)</h3>
+        <pre><code>sayısal i = 0
+döngü i &lt; 10
+    yazdır(i)
     i = i + 1
-end loop</code></pre>
+döngü sonu</code></pre>
 
         <h3>Sonsuz Döngü</h3>
-        <pre><code>loop
-    if done then exit
-    process()
-end loop</code></pre>
+        <pre><code>döngü
+    koşul bitti ise çık
+    işle()
+döngü sonu</code></pre>
 
-        <h3>For Each</h3>
-        <pre><code>list numbers = [1; 2; 3; 4; 5]
-for each n in numbers
-    print(n)
-end for</code></pre>
+        <h3>Her Biri İçin (for each)</h3>
+        <pre><code>sayısal[] sayılar = [1; 2; 3; 4; 5]
+her n içinde sayılar
+    yazdır(n)
+her sonu</code></pre>
 
         <!-- FONKSİYONLAR -->
         <h2 id="fonksiyonlar">Fonksiyonlar</h2>
         <pre><code>-- Dönüş değeri olan
-numeric function add(a; b)
-    return a + b
-end function
+sayısal fonksiyon topla(sayısal a; sayısal b)
+    döndür a + b
+fonksiyon sonu
 
 -- Dönüş değeri olmayan
-none function greet(string name)
-    print("Hello, " + name)
-end function
+hiçbir fonksiyon selamla(metin isim)
+    yazdır("Merhaba, " + isim)
+fonksiyon sonu
 
 -- Çağrım
-numeric result = add(3; 5)
-greet("World")</code></pre>
+sayısal sonuç = topla(3; 5)
+selamla("Dünya")</code></pre>
 
         <h3>Lambda</h3>
-        <pre><code>numeric double = lambda(x)
-    return x * 2
-end lambda
+        <pre><code>sayısal iki_kat = lambda(sayısal x)
+    döndür x * 2
+lambda sonu
 
-print(double(5))    -- 10</code></pre>
+yazdır(iki_kat(5))    -- 10</code></pre>
 
         <!-- STRUCT -->
         <h2 id="struct">Struct</h2>
-        <pre><code>struct Point
-    numeric x
-    numeric y
-end struct
+        <pre><code>yapı Nokta
+    sayısal x
+    sayısal y
+yapı sonu
 
-Point p = Point { x: 10; y: 20 }
-print(p.x)</code></pre>
+Nokta n = Nokta { x: 10; y: 20; }
+yazdır(n.x)</code></pre>
 
         <!-- LİSTELER -->
         <h2 id="listeler">Listeler</h2>
-        <pre><code>list names = ["Ali"; "Can"; "Ece"]
-print(names[0])         -- Ali
-print(names.length)     -- 3
+        <pre><code>metin[] isimler = ["Ali"; "Can"; "Ece"]
+yazdır(isimler[0])          -- Ali
+yazdır(isimler.length)      -- 3
 
--- Append
-names.append("Duru")</code></pre>
+-- Ekle
+isimler.push("Duru")</code></pre>
 
         <!-- HATA YÖNETİMİ -->
         <h2 id="hata-yonetimi">Hata Yönetimi</h2>
-        <pre><code>try
-    numeric result = riskyOperation()
-    print(result)
-catch error
-    print("Hata: " + error.message)
-finally
-    cleanup()
-end try</code></pre>
+        <pre><code>dene
+    sayısal sonuç = riskliİşlem()
+    yazdır(sonuç)
+hata yakala
+    yazdır("Hata: " + hata.mesaj)
+sonunda
+    temizle()
+dene sonu</code></pre>
 
-        <h3>Result Tipi</h3>
-        <pre><code>-- Başarı veya hata döndüren fonksiyon
-Result function divide(numeric a; numeric b)
-    if b == 0 then
-        throw "Sıfıra bölme hatası"
-    end if
-    return a / b
-end function</code></pre>
+        <h3>Fırlat / Yakala</h3>
+        <pre><code>-- Hata fırlatan fonksiyon
+sayısal fonksiyon böl(sayısal a; sayısal b)
+    koşul b == 0 ise
+        fırlat "Sıfıra bölme hatası"
+    koşul sonu
+    döndür a / b
+fonksiyon sonu</code></pre>
 
         <!-- EŞZAMANLILIK -->
         <h2 id="esza">Eşzamanlılık — Spawn &amp; Channel</h2>
-        <pre><code>-- Spawn: paralel görev başlat
-spawn
-    print("Paralel çalışıyor")
-end spawn
+        <pre><code>-- Başlat: paralel görev
+başlat
+    yazdır("Paralel çalışıyor")
+başlat sonu
 
--- Async/Await
-async function fetchData()
-    string data = await loadFromDisk("data.txt")
-    print(data)
-end function</code></pre>
+-- Eşzamansız / Bekle
+eşzamansız fonksiyon veriGetir()
+    metin veri = bekle disktenYükle("veri.txt")
+    yazdır(veri)
+fonksiyon sonu</code></pre>
 
         <!-- TÜRKÇE REFERANS -->
         <h2 id="turkce-ref">Türkçe Anahtar Kelimeler (Özet)</h2>

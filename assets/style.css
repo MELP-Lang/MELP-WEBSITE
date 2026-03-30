@@ -129,6 +129,16 @@ nav {
   height: 32px;
 }
 
+.nav-logo img {
+  width: 32px;
+  height: 32px;
+  filter: invert(1) brightness(2);
+}
+
+[data-theme="light"] .nav-logo img {
+  filter: none;
+}
+
 .nav-links {
   display: flex;
   align-items: center;
@@ -345,6 +355,16 @@ p.muted {
 .hero-logo svg {
   width: 72px;
   height: 72px;
+}
+
+.hero-logo img {
+  width: 96px;
+  height: 96px;
+  filter: invert(1) brightness(2);
+}
+
+[data-theme="light"] .hero-logo img {
+  filter: none;
 }
 
 .hero h1 {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MELP — Kendi doğal dilinizde yazın. GC yok, borrow checker yok, memory safe. LLVM native binary.">
+  <meta name="description" content="MELP — Kendi doğal dilinizde yazın. GC yok, borrow checker yok, memory safe (beta'da planlandı). LLVM native binary.">
   <title>MELP — Doğal Dil, Native Hız</title>
   <link rel="stylesheet" href="assets/style.css">
 </head>
@@ -13,13 +13,8 @@
   <header>
     <nav>
       <a href="index.html" class="nav-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-          <rect width="64" height="64" rx="10" fill="#21252b"/>
-          <text x="32" y="44" font-family="monospace" font-size="28" font-weight="bold"
-                text-anchor="middle" fill="#528bff">M</text>
-          <rect x="8" y="50" width="48" height="3" rx="1.5" fill="#528bff" opacity="0.4"/>
-        </svg>
-        MELP
+        <img src="assets/melp-logo.svg" alt="MELP Logo" width="32" height="32">
+        MELP <span style="font-size:0.7em; font-weight:400; opacity:0.6;">(alfa)</span>
       </a>
       <ul class="nav-links" id="navLinks">
         <li><a href="index.html" class="active">Ana Sayfa</a></li>
@@ -43,21 +38,17 @@
     <!-- ========== HERO ========== -->
     <section class="hero">
       <div class="hero-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-          <rect width="64" height="64" rx="10" fill="#21252b"/>
-          <text x="32" y="44" font-family="monospace" font-size="28" font-weight="bold"
-                text-anchor="middle" fill="#528bff">M</text>
-          <rect x="8" y="50" width="48" height="3" rx="1.5" fill="#528bff" opacity="0.4"/>
-        </svg>
+        <img src="assets/melp-logo.svg" alt="MELP Logo" width="96" height="96">
       </div>
       <h1>Kendi doğal dilinizde yazın.</h1>
-      <p class="hero-subtitle">GC yok &nbsp;·&nbsp; Borrow checker yok &nbsp;·&nbsp; Memory safe.</p>
+      <p class="hero-subtitle">GC yok &nbsp;·&nbsp; Borrow checker yok &nbsp;·&nbsp; Memory safe.*</p>
       <div class="badge-row">
         <span class="badge badge-blue">GC Yok</span>
-        <span class="badge badge-teal">Annotation Yok</span>
-        <span class="badge badge-green">Memory Safe</span>
+        <span class="badge badge-teal">Multi Syntax</span>
+        <span class="badge badge-green">Memory Safe*</span>
         <span class="badge badge-yellow">LLVM Native</span>
       </div>
+      <p class="hero-footnote" style="margin-top:0.5rem;font-size:0.75rem;opacity:0.65;">* Beta sürümünde planlandı.</p>
       <div class="btn-group" style="justify-content:center;">
         <a href="https://melp-lang.github.io/melp-ide-web/" target="_blank" rel="noopener" class="btn btn-primary">Hemen Dene →</a>
         <a href="https://github.com/MELP-Lang/MELP" target="_blank" rel="noopener" class="btn btn-outline">GitHub →</a>
@@ -123,11 +114,9 @@
       <div class="cards-grid">
         <div class="card">
           <div class="card-icon">🌍</div>
-          <h3>Çok Dilli, Çok Sentaks</h3>
+          <h3>Çok Dilli, Çok Sentakslı</h3>
           <p>
-            Türkçe, İngilizce, Rusça — aynı derleyici. Bir <code class="inline">keywords.json</code>
-            dosyası yeni bir dil eklemek için yeterli. Ayrıca C-stili, Python-stili veya
-            doğal MELP stili sözdizimi arasında seçim yapabilirsiniz.
+            Dünyanın herhangi bir dilinde (Türkçe, Arapça vs.); C, Python, Go gibi tanıdık sözdizimleriyle kodlamada tam özgürlük. 
           </p>
         </div>
         <div class="card">
