@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="MELP programlama dili için tarayıcı tabanlı IDE. Kurulum gerektirmez — doğrudan kodlamaya başlayın.">
   <title>MELP IDE — Online Editör</title>
-  <link rel="shortcut icon" type="image/x-icon" href="/assets/melp-logo.ico">
-  <link rel="icon" type="image/png" href="/assets/melp-logo.png">
+  <link rel="icon" type="image/x-icon" href="../assets/melp-logo.ico">
+  <link rel="icon" type="image/png" sizes="512x512" href="../assets/melp-logo.png">
   <script src="editor.bundle.js" defer></script>
 
   <!-- ── WASM modu: tarayıcı içi derleme ──────────────────────────────── -->
@@ -300,6 +300,9 @@
     .tb-btn.primary:hover { background: #0069ab; }
     .tb-btn.run     { background: #3d8b40; color: #fff; border-color: #3d8b40; }
     .tb-btn.run:hover { background: #2e7d32; }
+    .tb-btn.stop    { background: #b71c1c; color: #fff; border-color: #b71c1c; display: none; }
+    .tb-btn.stop:hover { background: #7f0000; }
+    .tb-btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .tb-sep { flex: 1; }
     /* ── Dil/Sözdizimi seçicileri ──────────────────────────────────────── */
     .tb-select-group { display: flex; align-items: center; gap: 3px; }
@@ -526,6 +529,7 @@
     <div class="tb-sep"></div>
     <button class="tb-btn primary" id="btn-compile" title="Derle (Ctrl+B)">⚙ Derle</button>
     <button class="tb-btn run"     id="btn-run"     title="Çalıştır (F5)">▶ Çalıştır</button>
+    <button class="tb-btn stop"    id="btn-stop"    title="Durdur">⏹ Durdur</button>
   </div>
 
   <!-- ── ANA ALAN ────────────────────────────────────────────────────────── -->

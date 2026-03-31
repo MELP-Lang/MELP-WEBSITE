@@ -8,6 +8,10 @@
 let _worker     = null;
 let _workerReady = false;
 
+// WASM yürütme zaman aşımı (ms). _start() senkron çalıştığından
+// worker.terminate() tek güvenilir durdurma yoludur.
+const RUN_TIMEOUT_MS = 10_000;
+
 function _getWorker() {
   if (_worker) return _worker;
   _worker = new Worker('compiler-worker.js');
@@ -23,6 +27,20 @@ _getWorker();
 // ── Backend adaptörü ───────────────────────────────────────────────────────
 const backend = {
   _pendingResolve: null,
+  _runTimer: null,
+
+  // Worker'ı zorla sonlandır; yeni worker hazırla; bekleyen promise'i çöz.
+  _terminate(reason) {
+    if (this._runTimer) { clearTimeout(this._runTimer); this._runTimer = null; }
+    if (_worker) { _worker.terminate(); _worker = null; _workerReady = false; }
+    if (this._pendingResolve) {
+      const res = this._pendingResolve;
+      this._pendingResolve = null;
+      res({ stdout: '', stderr: reason, exitCode: -1 });
+    }
+    // Sonraki çalıştırma için worker'ı ön ısıt
+    _getWorker();
+  },
 
   compile(code, run) {
     return new Promise((resolve) => {
@@ -31,6 +49,12 @@ const backend = {
       let stdout = '';
       let stderr = '';
       let compileSize = 0;
+
+      const done = (result) => {
+        if (this._runTimer) { clearTimeout(this._runTimer); this._runTimer = null; }
+        this._pendingResolve = null;
+        resolve(result);
+      };
 
       worker.onmessage = (e) => {
         const msg = e.data;
@@ -41,15 +65,26 @@ const backend = {
           case 'compile-start':
             break;
           case 'compile-error':
-            resolve({ stdout: '', stderr: msg.stderr, exitCode: 1 });
+            done({ stdout: '', stderr: msg.stderr, exitCode: 1 });
             break;
           case 'compile-success':
             compileSize = msg.size;
             if (!run) {
-              resolve({ stdout: `✅ Derleme başarılı (${compileSize} byte WASM)\n`, stderr: '', exitCode: 0 });
+              done({ stdout: `✅ Derleme başarılı (${compileSize} byte WASM)\n`, stderr: '', exitCode: 0 });
             }
             break;
           case 'run-start':
+            // WASM yürütmesi başladı — timeout koy.
+            // _start() senkron çalıştığından cancel mesajı işlenemez;
+            // süre dolunca worker.terminate() ile kesilir.
+            this._runTimer = setTimeout(() => {
+              this._terminate(
+                `⏱ Zaman aşımı: program ${RUN_TIMEOUT_MS / 1000} saniyede tamamlanamadı.\n` +
+                `Not: Web IDE, LLVM optimizasyonu olmayan ham WASM backend kullanır.\n` +
+                `Rekürsif fib(n>30) gibi O(2^n) hesaplamalar çok yavaş çalışır.\n` +
+                `Ayrıntı: https://melp.dev/roadmap (WASM backend iyileştirme planı)`
+              );
+            }, RUN_TIMEOUT_MS);
             break;
           case 'run-stdout':
             stdout += msg.stdout;
@@ -58,10 +93,10 @@ const backend = {
             stderr += msg.stderr;
             break;
           case 'run-exit':
-            resolve({ stdout, stderr, exitCode: msg.exitCode });
+            done({ stdout, stderr, exitCode: msg.exitCode });
             break;
           case 'run-cancel':
-            resolve({ stdout, stderr: stderr || '⛔ İptal edildi', exitCode: -1 });
+            done({ stdout, stderr: stderr || '⛔ İptal edildi', exitCode: -1 });
             break;
         }
       };
@@ -71,9 +106,9 @@ const backend = {
   },
 
   cancel() {
-    if (_worker) {
-      _worker.postMessage({ type: 'cancel' });
-    }
+    // WASM _start() senkron çalıştığından cancel mesajı işlenemez.
+    // Tek gerçek durdurma yolu worker.terminate().
+    this._terminate('⛔ Kullanıcı tarafından durduruldu.');
   }
 };
 
@@ -426,8 +461,8 @@ const EXAMPLES = [
       russian: 'Фибоначчи', arabic: 'فيبوناتشي', chinese: '斐波那契',
     },
     codes: {
-      default: `numeric function fibonacci(numeric n)\n    if n <= 1 then\n        return n\n    end if\n    return fibonacci(n - 1) + fibonacci(n - 2)\nend function\n\nfunction main()\n    loop i = 0 to 9\n        print(fibonacci(i))\n    end loop\nend function\n`,
-      turkish: `sayısal fonksiyon fibonacci(sayısal n)\n    koşul n <= 1 ise\n        döndür n\n    koşul sonu\n    döndür fibonacci(n - 1) + fibonacci(n - 2)\nfonksiyon sonu\n\nfonksiyon giriş()\n    döngü i = 0 kadar 9\n        yaz(fibonacci(i))\n    döngü sonu\nfonksiyon sonu\n`,
+      default: `-- Note: recursive fib(n>30) is slow in WASM (unoptimized backend)\nnumeric function fibonacci(numeric n)\n    if n <= 1 then\n        return n\n    end if\n    return fibonacci(n - 1) + fibonacci(n - 2)\nend function\n\nfunction main()\n    loop i = 0 to 9\n        print(fibonacci(i))\n    end loop\nend function\n`,
+      turkish: `-- Not: rekürsif fib(n>30) WASM'da yavaştır (optimize edilmemiş backend)\nsayısal fonksiyon fibonacci(sayısal n)\n    koşul n <= 1 ise\n        döndür n\n    koşul sonu\n    döndür fibonacci(n - 1) + fibonacci(n - 2)\nfonksiyon sonu\n\nfonksiyon giriş()\n    döngü i = 0 kadar 9\n        yaz(fibonacci(i))\n    döngü sonu\nfonksiyon sonu\n`,
     },
   },
   {
@@ -464,28 +499,95 @@ const EXAMPLES = [
   },
   {
     labels: {
-      english: 'Enum + Match', turkish: 'Sıralama + Eşleştir',
-      russian: 'Перечисление + Совпадение', arabic: 'تعداد + مطابقة', chinese: '枚举 + 匹配',
+      english: 'Value Branching', turkish: 'Deger Dallanmasi',
+      russian: 'Ветвление по значению', arabic: 'تفرع القيم', chinese: '值分支',
     },
     codes: {
-      default: `enum Color\n    RED\n    GREEN\n    BLUE\nend enum\n\nfunction main()\n    numeric c = Color.GREEN\n    match c\n        case Color.RED   then print("red")\n        case Color.GREEN then print("green")\n        case Color.BLUE  then print("blue")\n    end match\nend function\n`,
-      turkish: `sıralama Renk\n    KIRMIZI\n    YEŞİL\n    MAVİ\nsıralama sonu\n\nfonksiyon giriş()\n    sayısal r = Renk.YEŞİL\n    seç r\n        durum Renk.KIRMIZI ise yaz("kırmızı")\n        durum Renk.YEŞİL   ise yaz("yeşil")\n        durum Renk.MAVİ    ise yaz("mavi")\n    seç sonu\nfonksiyon sonu\n`,
+      default: `function describe(numeric n)\n    if n == 1 then\n        print("one")\n    else if n == 2 then\n        print("two")\n    else if n == 3 then\n        print("three")\n    else\n        print("other")\n    end if\nend function\n\nfunction main()\n    describe(1)\n    describe(2)\n    describe(3)\n    describe(9)\nend function\n`,
+      turkish: `fonksiyon tanimla(sayısal n)\n    koşul n == 1 ise\n        yaz("bir")\n    değilse koşul n == 2 ise\n        yaz("iki")\n    değilse koşul n == 3 ise\n        yaz("üç")\n    yoksa\n        yaz("diğer")\n    koşul sonu\nfonksiyon sonu\n\nfonksiyon giriş()\n    tanimla(1)\n    tanimla(2)\n    tanimla(3)\n    tanimla(9)\nfonksiyon sonu\n`,
     },
   },
   {
     labels: {
-      english: 'Try / Error', turkish: 'Dene / Hata',
-      russian: 'Попытка / Ошибка', arabic: 'حاول / خطأ', chinese: '尝试 / 错误',
+      english: 'Guarded Divide', turkish: 'Korumali Bolme',
+      russian: 'Защищенное деление', arabic: 'قسمة محمية', chinese: '安全除法',
     },
     codes: {
-      default: `numeric function divide(numeric a; numeric b)\n    if b == 0 then\n        throw "division by zero"\n    end if\n    return a / b\nend function\n\nfunction main()\n    try\n        numeric r = divide(10; 0)\n        print(r)\n    catch e\n        print("error: " + e)\n    end try\nend function\n`,
-      turkish: `sayısal fonksiyon böl(sayısal a; sayısal b)\n    koşul b == 0 ise\n        fırlat "sıfıra bölme"\n    koşul sonu\n    döndür a / b\nfonksiyon sonu\n\nfonksiyon giriş()\n    dene\n        sayısal r = böl(10; 0)\n        yaz(r)\n    yakala e\n        yaz("hata: " + e)\n    dene sonu\nfonksiyon sonu\n`,
+      default: `numeric function safe_divide(numeric a; numeric b)\n    if b == 0 then\n        print("error: division by zero")\n        return 0\n    end if\n    print(a / b)\n    return 1\nend function\n\nfunction main()\n    safe_divide(10; 2)\n    safe_divide(10; 0)\n    safe_divide(9; 3)\nend function\n`,
+      turkish: `sayısal fonksiyon guvenli_bol(sayısal a; sayısal b)\n    koşul b == 0 ise\n        yaz("hata: sıfıra bölme")\n        döndür 0\n    koşul sonu\n    yaz(a / b)\n    döndür 1\nfonksiyon sonu\n\nfonksiyon giriş()\n    guvenli_bol(10; 2)\n    guvenli_bol(10; 0)\n    guvenli_bol(9; 3)\nfonksiyon sonu\n`,
+    },
+  },
+  {
+    labels: {
+      english: 'FizzBuzz', turkish: 'FizzBuzz',
+      russian: 'FizzBuzz', arabic: 'FizzBuzz', chinese: 'FizzBuzz',
+    },
+    codes: {
+      default: `function main()\n    loop i = 1 to 20\n        if i mod 15 == 0 then\n            print("FizzBuzz")\n        else if i mod 3 == 0 then\n            print("Fizz")\n        else if i mod 5 == 0 then\n            print("Buzz")\n        else\n            print(i)\n        end if\n    end loop\nend function\n`,
+      turkish: `fonksiyon giriş()\n    döngü i = 1 kadar 20\n        koşul i mod 15 == 0 ise\n            yaz("FizzBuzz")\n        değilse koşul i mod 3 == 0 ise\n            yaz("Fizz")\n        değilse koşul i mod 5 == 0 ise\n            yaz("Buzz")\n        yoksa\n            yaz(i)\n        koşul sonu\n    döngü sonu\nfonksiyon sonu\n`,
+    },
+  },
+  {
+    labels: {
+      english: 'Break & Continue', turkish: 'Cik ve Devam',
+      russian: 'Выход и продолжение', arabic: 'خروج ومتابعة', chinese: '跳出与继续',
+    },
+    codes: {
+      default: `-- exit stops the loop, continue skips to next iteration\nfunction main()\n    -- print evens up to 10, skip odds\n    loop i = 1 to 10\n        if i mod 2 != 0 then\n            continue\n        end if\n        print(i)\n    end loop\n\n    -- stop when first multiple of 7 is found\n    loop j = 1 to 100\n        if j mod 7 == 0 then\n            print(j)\n            exit\n        end if\n    end loop\nend function\n`,
+      turkish: `-- exit döngüyü durdurur, continue sonraki adıma atlar\nfonksiyon giriş()\n    -- 10'a kadar çift sayıları yaz, tek sayıları atla\n    döngü i = 1 kadar 10\n        koşul i mod 2 != 0 ise\n            devam\n        koşul sonu\n        yaz(i)\n    döngü sonu\n\n    -- 7'nin ilk katını bulunca dur\n    döngü j = 1 kadar 100\n        koşul j mod 7 == 0 ise\n            yaz(j)\n            çık\n        koşul sonu\n    döngü sonu\nfonksiyon sonu\n`,
+    },
+  },
+  {
+    labels: {
+      english: 'Sum & Max', turkish: 'Toplam ve Maksimum',
+      russian: 'Сумма и максимум', arabic: 'مجموع وأقصى', chinese: '求和与最大值',
+    },
+    codes: {
+      default: `function main()\n    -- sum 1..100\n    numeric total = 0\n    loop i = 1 to 100\n        total = total + i\n    end loop\n    print(total)\n\n    -- find max in a sequence\n    numeric mx = 0\n    loop v = 1 to 10\n        numeric val = v * v - 5 * v + 6\n        if val > mx then\n            mx = val\n        end if\n    end loop\n    print(mx)\nend function\n`,
+      turkish: `fonksiyon giriş()\n    -- 1'den 100'e toplam\n    sayısal toplam = 0\n    döngü i = 1 kadar 100\n        toplam = toplam + i\n    döngü sonu\n    yaz(toplam)\n\n    -- bir dizide maksimum bul\n    sayısal maks = 0\n    döngü v = 1 kadar 10\n        sayısal deger = v * v - 5 * v + 6\n        koşul deger > maks ise\n            maks = deger\n        koşul sonu\n    döngü sonu\n    yaz(maks)\nfonksiyon sonu\n`,
+    },
+  },
+  {
+    labels: {
+      english: 'Enum & Match', turkish: 'Sıralama ve Seçim',
+      russian: 'Перечисление и выбор', arabic: 'تعداد ومطابقة', chinese: '枚举与匹配',
+    },
+    codes: {
+      default: `enum Color\n    RED\n    GREEN\n    BLUE\nend enum\n\nfunction colorName(Color c)\n    match c\n        case Color.RED then\n            print("red")\n        case Color.GREEN then\n            print("green")\n        case Color.BLUE then\n            print("blue")\n    end match\nend function\n\nfunction main()\n    Color x = Color.GREEN\n    colorName(x)\n    colorName(Color.RED)\n    colorName(Color.BLUE)\nend function\n`,
+    },
+  },
+  {
+    labels: {
+      english: 'Lambda', turkish: 'Lambda',
+      russian: 'Лямбда', arabic: 'دالة مجهولة', chinese: 'Lambda函数',
+    },
+    codes: {
+      default: `function main()\n    numeric sq = lambda(x) -> x * x\n    numeric double = lambda(x) -> x + x\n    print(sq(3))\n    print(sq(5))\n    print(sq(10))\n    print(double(7))\nend function\n`,
+    },
+  },
+  {
+    labels: {
+      english: 'Try & Catch', turkish: 'Dene ve Hata Yakala',
+      russian: 'Обработка ошибок', arabic: 'معالجة الأخطاء', chinese: '异常处理',
+    },
+    codes: {
+      default: `numeric function safeDivide(numeric a; numeric b)\n    if b == 0 then\n        throw "division by zero"\n    end if\n    return a / b\nend function\n\nfunction main()\n    try\n        print(safeDivide(10; 2))\n        print(safeDivide(6; 3))\n        print(safeDivide(5; 0))\n    catch e\n        print("error caught")\n    end try\nend function\n`,
+    },
+  },
+  {
+    labels: {
+      english: 'Alertbox', turkish: 'Uyari Kutusu',
+      russian: 'Диалог предупреждения', arabic: 'مربع تنبيه', chinese: '警告框',
+    },
+    codes: {
+      default: `-- alertbox: print("__ALERT__:message") shows a visual alert in the IDE\nfunction check(numeric x)\n    if x < 0 then\n        print("__ALERT__:negative value detected")\n        return\n    end if\n    print(x)\nend function\n\nfunction main()\n    check(5)\n    check(-3)\n    check(0)\nend function\n`,
+      turkish: `-- uyarı kutusu: print("__ALERT__:mesaj") IDE'de görsel uyarı gösterir\nfonksiyon kontrol(sayısal x)\n    koşul x < 0 ise\n        print("__ALERT__:negatif deger tespit edildi")\n        döndür\n    koşul sonu\n    yaz(x)\nfonksiyon sonu\n\nfonksiyon giriş()\n    kontrol(5)\n    kontrol(-3)\n    kontrol(0)\nfonksiyon sonu\n`,
     },
   },
 ];
 
 const LANG_DISPLAY = { english:'English', turkish:'Türkçe', russian:'Русский', arabic:'العربية', chinese:'中文' };
-const SYN_DISPLAY  = { mlp:'MLP', pmpl:'MLP', vbnet:'VB.NET', python_style:'Python' };
+const SYN_DISPLAY  = { mlp:'MLP', pmpl:'MLP', vbnet:'VB.NET', python_style:'Python', c_style:'C/C++', go_style:'Go' };
 
 function getExampleLabel(ex) {
   return ex.labels[state.lang] || ex.labels.english;
@@ -585,11 +687,15 @@ async function compile(andRun = false) {
     .replace(/\bend\s+lambda\b/g,    'end_lambda')
     .replace(/\bend\s+event\b/g,     'end_event')
     .replace(/\bend\s+while\b/g,     'end_while')
+    .replace(/\bend\s+spawn\b/g,     'end_spawn')
     .replace(/\belse\s+if\b/g,       'else_if');
 
   showOutput('⏳ ' + (andRun ? 'Derleniyor ve çalıştırılıyor...' : 'Derleniyor...') + '\n');
   if (normInfo) appendOutput(normInfo);
   setStatus('⏳ Çalışıyor...');
+
+  // Çalışırken: Durdur butonu göster, Çalıştır/Derle devre dışı bırak
+  if (andRun) _setRunning(true);
 
   let json;
   try {
@@ -597,15 +703,28 @@ async function compile(andRun = false) {
   } catch (err) {
     appendOutput('❌ Derleme hatası: ' + err.message + '\n');
     setStatus('❌ Hata');
+    _setRunning(false);
     return;
   }
 
+  _setRunning(false);
+
   if (json.stderr) appendOutput(json.stderr + '\n');
-  if (json.stdout) appendOutput(json.stdout);
+  if (json.stdout) processStdout(json.stdout);
   if (!json.stderr && !json.stdout) appendOutput('(çıktı yok)\n');
 
   const ok = json.exitCode === 0;
-  setStatus(ok ? '✅ Başarılı' : '❌ Derleme hatası');
+  setStatus(ok ? '✅ Başarılı' : (json.exitCode === -1 ? '⛔ Durduruldu' : '❌ Derleme hatası'));
+}
+
+// Çalışırken buton durumunu değiştir
+function _setRunning(running) {
+  const btnRun    = $('btn-run');
+  const btnStop   = $('btn-stop');
+  const btnCompile = $('btn-compile');
+  if (btnRun)     btnRun.disabled    = running;
+  if (btnCompile) btnCompile.disabled = running;
+  if (btnStop)    btnStop.style.display = running ? '' : 'none';
 }
 
 // ── Çıktı paneli ───────────────────────────────────────────────────────────
@@ -617,6 +736,27 @@ function showOutput(text) {
 function appendOutput(text) {
   outputEl.classList.remove('hidden');
   $('output-content').textContent += text;
+}
+
+// ── alertbox intercept ─────────────────────────────────────────────────────
+// WASM print("__ALERT__:mesaj") → ⚠️ görsel uyarı; output paneline yazılmaz
+function showAlert(msg) {
+  window.alert('⚠️  ' + msg);
+  appendOutput(`\n⚠️  ${msg}\n\n`);
+}
+
+function processStdout(raw) {
+  const lines = raw.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith('__ALERT__:')) {
+      showAlert(line.slice(10));
+    } else {
+      // Son satır boş string ise (trailing newline) atla
+      if (i === lines.length - 1 && line === '') break;
+      appendOutput(line + '\n');
+    }
+  }
 }
 
 // ── Status bar ─────────────────────────────────────────────────────────────
@@ -685,6 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-save').addEventListener('click', saveFile);
   $('btn-compile').addEventListener('click', () => compile(false));
   $('btn-run').addEventListener('click', () => compile(true));
+  if ($('btn-stop')) $('btn-stop').addEventListener('click', () => backend.cancel());
   $('btn-close-output').addEventListener('click', () => $('output-panel').classList.add('hidden'));
 
   // Klavye kısayolları
