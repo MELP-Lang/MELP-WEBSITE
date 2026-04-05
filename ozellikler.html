@@ -23,6 +23,7 @@
         <li><a href="ozellikler.html" class="active">Özellikler</a></li>
         <li><a href="kurulum.html">Kurulum</a></li>
         <li><a href="docs.html">Dokümanlar</a></li>
+        <li><a href="inventory.html">Envanter</a></li>
         <li><a href="https://melp-lang.github.io/melp-ide-web/" target="_blank" rel="noopener" class="btn-nav">Hemen Dene →</a></li>
       </ul>
       <div class="theme-toggle">
@@ -167,7 +168,12 @@
       <div class="info-box">
         <p>
           <strong>Stateless-First:</strong> Varsayılan tercih saf ve kısa ömürlü işlemlerdir.
-          Global durum gerekiyorsa bunun maliyeti ve etkisi açık ve bilinçli olmalıdır.
+          Global durum gerekiyorsa MELP sizi engellemez. Kullanıcı, bedeline katlanarak
+          isterse MELP'i stateful olarak da kullanabilir.*
+        </p>
+        <p style="font-size:0.85rem;opacity:0.75;margin-top:0.5rem;">
+          * Stateful kullanımın bedeli beklenenin ötesinde çok maliyetli değildir.
+          MELP'in scope mekanizması bu durumun üstesinden gelecek şekilde planlanmıştır.
         </p>
       </div>
     </section>
@@ -176,7 +182,7 @@
          3. EOK — EN ÖNEMLİ BÖLÜM
          ==================================================== -->
     <section class="feature-section">
-      <h2>🔐 3. Yapısal Binary Güvenliği — EOK <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">Beta</span></h2>
+      <h2>🔐 3. Yapısal Binary Güvenliği — EOK <span class="badge badge-teal" style="font-size:0.75rem;vertical-align:middle;">v1.0+</span></h2>
       <p style="font-size:1.1rem;font-weight:600;color:var(--text-primary);margin-bottom:1.5rem;">
         Binary'e sahip olmak, mantığa sahip olmak anlamına gelmez.
       </p>
@@ -238,6 +244,14 @@
           <strong>Hedef Kitle:</strong> Savunma sanayi, bankacılık ve kritik altyapı yazılımları
           için tasarlanmıştır. Fikri mülkiyet koruması iş modelinin merkezinde olan kuruluşlar
           için EOK doğrudan bir değer önerisidir.
+        </p>
+      </div>
+
+      <div class="info-box" style="margin-top:1.25rem;">
+        <p>
+          <strong>Durum:</strong> EOK Phase 3 aktif — FBO tablo kompozisyonu çalışıyor, tip ve
+          yapı metadatası indeksleniyor. Tam binary indeks şifreleme (Phase 4)
+          <strong>MELP v1.0</strong> ile kararlı sürüme geçecektir.
         </p>
       </div>
 
@@ -325,7 +339,7 @@ melp_compiler ornek.mlp -o a.out
         MELP derleme hattının optimizasyon omurgası üç katmandan oluşur:
         <strong>STO</strong> (Smart Type Optimization) tip çıkarımını,
         <strong>SAO</strong> (Semantic-Aware Optimization) erişim örüntülerini analiz eder;
-        <strong>FBO</strong> (Frontend-Backend Optimization) ise semantii 32-bit indekse indirger.
+        <strong>FBO</strong> (Frontend-Backend Optimization) ise semantiği 32-bit indekse indirger.
         Modüller arası transfer yalnızca 4 byte indekstir; kütüphane seyahat etmez.
       </p>
       <div class="eok-box">
@@ -393,8 +407,8 @@ melp_compiler ornek.mlp -o a.out
           <tbody>
             <tr><td><code class="inline">numeric</code></td><td>BigDecimal</td><td>1 bit’ten binlerce byte’a kadar her sayı</td></tr>
             <tr><td><code class="inline">string</code></td><td>BigString</td><td>Herhangi bir uzunlukta metin</td></tr>
-            <tr><td><code class="inline">boolean</code></td><td>—</td><td>doğru / yanlış</td></tr>
-          </tbody>
+            <tr><td><code class="inline">boolean</code></td><td>—</td><td>doğru / yanlış</td></tr>            <tr><td><code class="inline">numeric?</code></td><td>Nullable</td><td>Değer atanmamış olabilir; <code class="inline">null</code> / <code class="inline">none</code> alabilir</td></tr>
+            <tr><td><code class="inline">tuple</code></td><td>i64 dizisi (heap)</td><td><code class="inline">(a, b, c)</code> literal; <code class="inline">(x, y) = boyut</code> destructuring</td></tr>          </tbody>
         </table>
       </div>
       <p>
@@ -409,7 +423,21 @@ melp_compiler ornek.mlp -o a.out
 <span class="kw">numeric</span> pi      = 3,14159265358979323846
 <span class="kw">numeric</span> miktar  = 1.000.000,45   <span class="cm">-- Noktalı binlik ayraç</span>
 <span class="kw">string</span>  mesaj   = <span class="str">"Merhaba"</span>
-<span class="kw">boolean</span> aktif   = <span class="kw">true</span></code></pre>
+<span class="kw">boolean</span> aktif   = <span class="kw">true</span>
+
+<span class="cm">-- Nullable tip (v1.2)</span>
+<span class="kw">numeric?</span> yas    = <span class="kw">null</span>           <span class="cm">-- atanmamış olabilir</span>
+<span class="kw">string?</span>  ad     = <span class="str">"Ali"</span>
+
+<span class="cm">-- Safe navigation operatörü</span>
+<span class="kw">string</span> sonuc = kullanici<span class="kw">?.</span>isim
+
+<span class="cm">-- Type cast</span>
+<span class="kw">numeric</span> n = deger <span class="kw">as numeric</span>
+
+<span class="cm">-- Tuple</span>
+<span class="kw">tuple</span> boyut = (1920; 1080)
+(<span class="kw">numeric</span> w; <span class="kw">numeric</span> h) = boyut</code></pre>
       </div>
       <div class="info-box">
         <p>

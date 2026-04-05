@@ -23,6 +23,7 @@
         <li><a href="ozellikler.html">Özellikler</a></li>
         <li><a href="kurulum.html" class="active">Kurulum</a></li>
         <li><a href="docs.html">Dokümanlar</a></li>
+        <li><a href="inventory.html">Envanter</a></li>
         <li><a href="https://melp-lang.github.io/melp-ide-web/" target="_blank" rel="noopener" class="btn-nav">Hemen Dene →</a></li>
       </ul>
       <div class="theme-toggle">
@@ -123,7 +124,7 @@
             <div class="install-step-content">
               <h3>Depoyu Klonlayın</h3>
               <pre><code>git clone https://github.com/MELP-Lang/MELP.git
-cd MELP/editors/ELECTRON</code></pre>
+cd MELP/EDITORS/ELECTRON</code></pre>
             </div>
           </div>
 
@@ -145,7 +146,7 @@ cd MELP/editors/ELECTRON</code></pre>
 
           <div class="info-box">
             <p>
-              <strong>Versiyon:</strong> 1.0.4 &nbsp;·&nbsp;
+              <strong>Versiyon:</strong> 0.1.0 &nbsp;·&nbsp;
               <strong>Platform:</strong> Linux x86_64 (macOS ve Windows desteği beta sürümünden sonra planlanmıştır.)
             </p>
           </div>
@@ -231,7 +232,7 @@ cd MELP/LLVM/STAGE1</code></pre>
               <h3>Derleyiciyi Derleyin</h3>
               <p>LLVM 14 ve C++17 destekleyen bir derleyici gereklidir:</p>
               <pre><code><span class="cm"># Bağımlılıklar (Debian/Ubuntu)</span>
-sudo apt install llvm-14 clang-14 build-essential
+sudo apt install llvm-dev clang build-essential
 
 <span class="cm"># Derleme</span>
 make</code></pre>
