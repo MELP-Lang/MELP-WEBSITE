@@ -905,11 +905,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function openLangModal() {
     const lang = state.lang;
     modalTitle.textContent = 'Dili Özelleştir — ' + (langSel.options[langSel.selectedIndex]?.text || lang);
-    // Türkçe kanonik dildir — salt okunur, Kaydet gizli
-    const isCanonical = (lang === 'turkish');
-    customTextarea.value = isCanonical
-      ? '-- Türkçe kanonik dildir.\n-- Keyword dönüşümü gerekmez.\n-- Farklı bir dil seçip tekrar açın.'
-      : buildDisplayText(lang);
+    // Türkçe kanonik dildir; İngilizce WASM'e doğrudan gider — her ikisi de salt okunur
+    const isCanonical = (lang === 'turkish' || lang === 'english');
+    let canonicalMsg = '';
+    if (lang === 'turkish') {
+      canonicalMsg = '-- Türkçe kanonik dildir.\n-- Keyword dönüşümü gerekmez.\n-- Farklı bir dil seçip tekrar açın.';
+    } else if (lang === 'english') {
+      canonicalMsg = '-- English keywords are sent directly to the compiler.\n-- No keyword mapping needed.\n-- Select a different language to customize.';
+    }
+    customTextarea.value = isCanonical ? canonicalMsg : buildDisplayText(lang);
     customTextarea.readOnly = isCanonical;
     customTextarea.style.opacity = isCanonical ? '0.55' : '1';
     if (modalSave) modalSave.style.display = isCanonical ? 'none' : '';
