@@ -1,0 +1,35 @@
+
+# Proje içi iletişim — asla commit edilmez
+PROJE_İLETİŞİM/
+PD_TALİMAT_*/
+MM_PROJE_SON_DURUM.md
+YZ_Bunu_Oku.md
+MM_LOG.md
+MM_DEVIR_TESLIM*.md
+
+
+# Proje ici iletisim - asla commit edilmez
+PROJE_ILETISIM/
+PROJE_İLETİŞİM/
+PD_TAL*
+MM_PROJE_SON_DURUM.md
+YZ_Bunu_Oku.md
+MM_LOG.md
+MM_DEVIR_TESLIM*
+
+# Proje ici iletisim - asla commit edilmez
+PROJE_ILETISIM/
+PD_TAL*/
+MM_PROJE_SON_DURUM.md
+YZ_Bunu_Oku.md
+MM_LOG.md
+MM_DEVIR_TESLIM*
+
+
+# Proje ici iletisim - asla commit edilmez
+PROJE_ILETISIM/
+PD_TAL*
+MM_PROJE_SON_DURUM.md
+YZ_Bunu_Oku.md
+MM_LOG.md
+MM_DEVIR_TESLIM*
