@@ -50,7 +50,7 @@
           <button class="tab-btn active" data-tab="webide">🌐 Web IDE (Kurulmsuz)</button>
           <button class="tab-btn" data-tab="electron" disabled style="opacity:0.5;cursor:not-allowed;">🖥️ Electron IDE <span style="font-size:0.75rem;font-weight:600;color:#a78bfa;">(Yakında)</span></button>
           <button class="tab-btn" data-tab="vscode">🧩 VS Code Uzantısı</button>
-          <button class="tab-btn" data-tab="cli">💻 CLI (Yerel)</button>
+          <button class="tab-btn" data-tab="cli" disabled style="opacity:0.5;cursor:not-allowed;">💻 CLI (Yerel) <span style="font-size:0.75rem;font-weight:600;color:#a78bfa;">(Yakında)</span></button>
         </div>
 
         <!-- TAB 1: WEB IDE -->
@@ -163,68 +163,13 @@ end function</code></pre>
 
         <!-- TAB 3: CLI -->
         <div class="tab-pane" id="tab-cli">
-          <div class="section-header" style="text-align:left;margin-bottom:2rem;">
-            <h2 style="font-size:1.6rem;">CLI — Yerel Kurulum</h2>
-            <p>
-              Derleyiciyi doğrudan makinenizde çalıştırın.
-              <span class="badge badge-yellow" style="font-size:0.78rem;">Linux x86_64 — Alfa</span>
+          <div style="text-align:center;padding:4rem 2rem;">
+            <div style="font-size:3rem;margin-bottom:1rem;">💻</div>
+            <h2 style="font-size:1.8rem;margin-bottom:1rem;">CLI — Yerel Kurulum</h2>
+            <p style="color:var(--text-muted);font-size:1.1rem;max-width:480px;margin:0 auto 2rem;">
+              Derleyiciyi doğrudan makinenizde çalıştırın. Kurulum kılavuzu hazırlanıyor.
             </p>
-          </div>
-
-          <div class="install-step">
-            <div class="step-num">1</div>
-            <div class="install-step-content">
-              <h3>Depoyu Klonlayın</h3>
-              <pre><code>git clone https://github.com/MELP-Lang/MELP.git
-cd MELP/LLVM/STAGE1</code></pre>
-            </div>
-          </div>
-
-          <div class="install-step">
-            <div class="step-num">2</div>
-            <div class="install-step-content">
-              <h3>Derleyiciyi Derleyin</h3>
-              <p>LLVM 14 ve C++17 destekleyen bir derleyici gereklidir:</p>
-              <pre><code><span class="cm"># Bağımlılıklar (Debian/Ubuntu)</span>
-sudo apt install llvm-dev clang build-essential
-
-<span class="cm"># Derleme</span>
-make</code></pre>
-            </div>
-          </div>
-
-          <div class="install-step">
-            <div class="step-num">3</div>
-            <div class="install-step-content">
-              <h3>İlk Programı Çalıştırın</h3>
-              <pre><code><span class="cm"># Örnek dosyayı çalıştır</span>
-bin/run_melp ornek.mlp
-
-<span class="cm"># Native binary üret</span>
-bin/melp_compiler ornek.mlp -o merhaba
-./merhaba</code></pre>
-            </div>
-          </div>
-
-          <div class="install-step">
-            <div class="step-num">4</div>
-            <div class="install-step-content">
-              <h3>Türkçe ile Yazın</h3>
-              <p>Bir <code class="inline">.mlp</code> dosyası oluşturun:</p>
-              <pre><code><span class="cm">-- merhaba.mlp</span>
-<span class="kw">fonksiyon</span> <span class="fn">giriş</span>()
-    <span class="fn">yaz</span>(<span class="str">"Merhaba Dünya!"</span>)
-<span class="kw">fonksiyon sonu</span></code></pre>
-              <pre><code>bin/run_melp merhaba.mlp
-<span class="cm"># Çıktı: Merhaba Dünya!</span></code></pre>
-            </div>
-          </div>
-
-          <div class="info-box">
-            <p>
-              <strong>Sistem Gereksinimleri:</strong> Linux x86_64, LLVM 14, GCC/Clang C++17.
-              macOS ve Windows desteği beta sürümünden sonra planlanmıştır.
-            </p>
+            <span class="badge badge-yellow" style="font-size:1rem;padding:0.4rem 1.2rem;">Yakında</span>
           </div>
         </div>
       </div>
