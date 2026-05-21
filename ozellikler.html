@@ -118,7 +118,7 @@
          2. MEMORY SAFE — GC'SİZ
          ==================================================== -->
     <section class="feature-section">
-      <h2>🛡️ 2. Memory Safe — GC'siz, Annotation'sız <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">Beta</span></h2>
+      <h2>🛡️ 2. Memory Safe — GC'siz, Scope-Tabanlı</h2>
       <p>
         MELP, varsayılan olarak global durum oluşturmaya izin vermez. Bu tek kural
         sayesinde bellek sızıntısı derleyici düzeyinde imkânsız hale gelir —
@@ -594,8 +594,8 @@ melp_compiler ornek.mlp -o a.out
       <p>
         v1.0 milstonunda MELP derleyicisi kendini MELP ile derleyecektir.
         Bu hedefe "self-hosting" denir ve bir dilin olgunluk göstergesidir.
-        Stage 0 (C++ → C++) ve Stage 1 (MELP → C++) aşamalarından sonra
-        Stage 2 (MELP → MELP) tamamlandığında bu hedef gerçekleşmiş olacak.
+        <strong>21 Mayıs 2026'da gerçekleşti:</strong> Gen6 ≡ Gen7 (MD5 identical),
+        59 modül, 170/170 acceptance test, Py-free orkestrasyon.
       </p>
       <div class="table-wrap">
         <table>
@@ -624,7 +624,7 @@ melp_compiler ornek.mlp -o a.out
               <td>Stage 2</td>
               <td>.mlp</td>
               <td>.mlp (self-hosting)</td>
-              <td><span class="badge badge-yellow" style="font-size:0.8rem;">Planlı</span></td>
+              <td><span class="badge badge-green" style="font-size:0.8rem;">✅ Tamam</span></td>
             </tr>
           </tbody>
         </table>
