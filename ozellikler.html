@@ -167,13 +167,15 @@
 
       <div class="info-box">
         <p>
-          <strong>Stateless-First:</strong> Varsayılan tercih saf ve kısa ömürlü işlemlerdir.
-          Global durum gerekiyorsa MELP sizi engellemez. Kullanıcı, bedeline katlanarak
-          isterse MELP'i stateful olarak da kullanabilir.*
+          <strong>Scope-First:</strong> MELP'te "state" diye bir kavram yoktur.
+          Her şey bir scope'tur. Kullanıcı scope hiyerarşisi tasarlar;
+          scope bittiğinde içindeki tüm bileşenler otomatik yok edilir.
+          Uzun ömürlü veri için <code>new scope</code> ile heap'te bağımsız
+          yaşam süresi tanımlanabilir.
         </p>
         <p style="font-size:0.85rem;opacity:0.75;margin-top:0.5rem;">
-          * Stateful kullanımın bedeli beklenenin ötesinde çok maliyetli değildir.
-          MELP'in scope mekanizması bu durumun üstesinden gelecek şekilde planlanmıştır.
+          * Scope mekanizması, geleneksel dillerdeki "global state" ihtiyacını
+          ortadan kaldırır. Veri, onu kullanan scope ile birlikte yaşar ve ölür.
         </p>
       </div>
     </section>
@@ -484,7 +486,7 @@ melp_compiler ornek.mlp -o a.out
     <section class="feature-section">
       <h2>💀 11. Ölü Modül Felsefesi</h2>
       <p>
-        Stateless-first mimarinin doğal sonucu: modüller varsayılan olarak <strong>ölüdür</strong>.
+        Scope-first mimarinin doğal sonucu: modüller varsayılan olarak <strong>ölüdür</strong>.
         Hiçbir modül kendi başına kaynak tahsis etmez ya da bellekte yer kaplamaz.
         Bir modülü <em>kullanan</em> modül diriltir ve iş bitince öldürür —
         atıl kaynak sıfır, çöp toplayıcıya gerek yoktur.
