@@ -123,7 +123,7 @@
         MELP, varsayılan olarak global durum oluşturmaya izin vermez. Bu tek kural
         sayesinde bellek sızıntısı derleyici düzeyinde imkânsız hale gelir —
         ne çalışma zamanı Garbage Collector ne de Rust'ın borrow checker'ı gibi
-        manuel annotation sistemi gerekir.
+        scope declaration sistemi gerekir.
       </p>
 
       <div class="table-wrap">
@@ -159,7 +159,7 @@
               <td>MELP</td>
               <td><span class="check">✅</span></td>
               <td><span class="check">✅</span></td>
-              <td>Hiçbiri — stateless-first</td>
+              <td>Hiçbiri — scope-first</td>
             </tr>
           </tbody>
         </table>
@@ -308,7 +308,7 @@ melp_compiler ornek.mlp -o a.out
       <p>
         MELP, eşzamanlılık için dil düzeyinde <code class="inline">spawn</code> ve
         <code class="inline">channel</code> desteği sunar. Paylaşılan durum yerine
-        mesaj geçişi modeli benimsenmiştir — bu yaklaşım stateless-first felsefesiyle tutarlıdır.
+        mesaj geçişi modeli benimsenmiştir — bu yaklaşım scope-first felsefesiyle tutarlıdır.
       </p>
       <div class="code-compare">
         <div class="code-panel">
@@ -564,7 +564,7 @@ melp_compiler ornek.mlp -o a.out
         <p>
           <strong>Tasarım İlkesi:</strong> Modüller arasında doğrudan state paylaşımı yoktur.
           İletişim FBO indeksleri üzerinden gerçekleşir; bu mimari EOK güvenliğini ve
-          stateless-first felsefesini pekiştirir.
+          scope-first felsefesini pekiştirir.
         </p>
       </div>
     </section>

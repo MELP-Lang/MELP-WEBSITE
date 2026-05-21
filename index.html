@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MELP — Kendi doğal dilinizde yazın. GC yok, borrow checker yok, memory safe (beta'da planlandı). LLVM native binary.">
+  <meta name="description" content="MELP — Kendi doğal dilinizde yazın. GC yok, borrow checker yok, scope-tabanlı otomatik bellek. LLVM native binary.">
   <title>MELP — Doğal Dil, Native Hız</title>
   <link rel="shortcut icon" type="image/x-icon" href="/assets/MELP_logo_1.ico">
   <link rel="icon" type="image/png" href="/assets/MELP_logo.png">
@@ -44,13 +44,13 @@
         <img src="assets/MELP_logo.svg" alt="MELP Logo" width="96" height="96">
       </div>
       <h1>Kendi doğal dilinizde yazın.</h1>
-      <p class="hero-subtitle">GC yok &nbsp;·&nbsp; Borrow checker yok &nbsp;·&nbsp; Memory safe</p>
+      <p class="hero-subtitle">GC yok &nbsp;·&nbsp; Borrow checker yok &nbsp;·&nbsp; Scope-tabanlı bellek &nbsp;·&nbsp; Memory safe</p>
       <div class="badge-row">
         <span class="badge badge-blue">GC Yok</span>
         <span class="badge badge-teal">Multi Syntax</span>
-        <span class="badge badge-green">Memory Safe</span>
+        <span class="badge badge-green">Scope Bellek</span>
         <span class="badge badge-yellow">LLVM Native</span>
-        <span class="badge badge-green" title="11 Nisan 2026 — Gen2=Gen3 differential test PASS">Self-Hosting ✅</span>
+        <span class="badge badge-green" title="21 Mayıs 2026 — Gen6≡Gen7 MD5 identical">Self-Hosting ✅</span>
       </div>
 
       <div class="btn-group" style="justify-content:center;">
@@ -61,8 +61,8 @@
       <!-- Selfhosting milestone banner -->
       <div style="margin-top:1.5rem;padding:0.85rem 1.25rem;background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(16,185,129,0.08));border:1px solid rgba(34,197,94,0.35);border-radius:10px;max-width:560px;margin-left:auto;margin-right:auto;text-align:center;">
         <p style="margin:0;font-size:0.95rem;line-height:1.6;">
-          🎉 <strong>11 Nisan 2026 —</strong> MELP artık kendini derleyebiliyor.<br>
-          <span style="opacity:0.8;font-size:0.88rem;">mlp ile yazılan derleyici kendi kaynak kodunu derledi · Gen2 = Gen3 · sıfır semantik fark</span>
+          🎉 <strong>21 Mayıs 2026 —</strong> TAM self-hosting: MELP kendini %100 derleyebiliyor.<br>
+          <span style="opacity:0.8;font-size:0.88rem;">59 modül · Gen6 ≡ Gen7 (MD5 identical) · 170/170 PASS · Py-free orkestrasyon</span>
         </p>
       </div>
     </section>
@@ -128,7 +128,7 @@
         </table>
       </div>
       <p class="muted" style="text-align:center;margin-top:1rem;font-style:italic;">
-        "MELP stateless-first mimarisiyle memory güvenliğini ne GC ne de borrow checker gerektirmeden sağlar."
+        "MELP scope-first mimarisiyle memory güvenliğini ne GC ne de borrow checker gerektirmeden sağlar."
       </p>
     </section>
 
