@@ -411,7 +411,6 @@ melp_compiler ornek.mlp -o a.out
             <tr><td><code class="inline">numeric</code></td><td>BigDecimal</td><td>1 bit’ten binlerce byte’a kadar her sayı</td></tr>
             <tr><td><code class="inline">string</code></td><td>BigString</td><td>Herhangi bir uzunlukta metin</td></tr>
             <tr><td><code class="inline">boolean</code></td><td>—</td><td>doğru / yanlış</td></tr>            <tr><td><code class="inline">numeric?</code></td><td>Nullable</td><td>Değer atanmamış olabilir; <code class="inline">null</code> / <code class="inline">none</code> alabilir</td></tr>
-            <tr><td><code class="inline">tuple</code></td><td>i64 dizisi (heap)</td><td><code class="inline">(a, b, c)</code> literal; <code class="inline">(x, y) = boyut</code> destructuring</td></tr>          </tbody>
         </table>
       </div>
       <p>
@@ -438,9 +437,6 @@ melp_compiler ornek.mlp -o a.out
 <span class="cm">-- Type cast</span>
 <span class="kw">numeric</span> n = deger <span class="kw">as numeric</span>
 
-<span class="cm">-- Tuple</span>
-<span class="kw">tuple</span> boyut = (1920; 1080)
-(<span class="kw">numeric</span> w; <span class="kw">numeric</span> h) = boyut</code></pre>
       </div>
       <div class="info-box">
         <p>
