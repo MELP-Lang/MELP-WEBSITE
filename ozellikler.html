@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MELP özellikleri — Çok dilli yazım, EOK binary güvenliği, LLVM native, spawn/channel, öz-derleme hedefi.">
+  <meta name="description" content="MELP özellikleri — Çok dilli yazım, LLVM native, scope+tunnel+channel, öz-derleme.">
   <title>Özellikler — MELP</title>
   <link rel="shortcut icon" type="image/x-icon" href="/assets/melp-logo.ico">
   <link rel="icon" type="image/png" href="/assets/melp-logo.png">
@@ -301,27 +301,28 @@ melp_compiler ornek.mlp -o a.out
     </section>
 
     <!-- ====================================================
-         5. SPAWN + CHANNEL
+         5. SCOPE + TUNNEL + CHANNEL
          ==================================================== -->
     <section class="feature-section">
-      <h2>🔄 5. Spawn + Channel</h2>
+      <h2>🔄 5. Scope + Tunnel + Channel</h2>
       <p>
-        MELP, eşzamanlılık için dil düzeyinde <code class="inline">spawn</code> ve
+        MELP, eşzamanlılık için scope-tabanlı <code class="inline">tunnel</code> ve
         <code class="inline">channel</code> desteği sunar. Paylaşılan durum yerine
         mesaj geçişi modeli benimsenmiştir — bu yaklaşım scope-first felsefesiyle tutarlıdır.
       </p>
       <div class="code-compare">
         <div class="code-panel">
           <div class="code-panel-header">
-            <span class="lang-dot"></span>İngilizce — Spawn
+            <span class="lang-dot"></span>İngilizce — Scope + Tunnel
           </div>
-          <pre><code><span class="kw">spawn</span>
-    <span class="fn">print</span>(<span class="str">"Paralel görev çalışıyor"</span>)
-<span class="kw">end spawn</span></code></pre>
+          <pre><code><span class="kw">scope</span> islem
+    <span class="kw">tunnel</span>(islem; loglayici)
+    <span class="fn">println</span>(<span class="str">"Scope içi paralel"</span>)
+<span class="kw">end scope</span></code></pre>
         </div>
         <div class="code-panel">
           <div class="code-panel-header">
-            <span class="lang-dot" style="background:var(--accent-alt)"></span>Türkçe — Spawn
+            <span class="lang-dot" style="background:var(--accent-alt)"></span>Türkçe — Scope + Kanal
           </div>
           <pre><code><span class="kw">başlat</span>
     <span class="fn">yaz</span>(<span class="str">"Paralel görev çalışıyor"</span>)
