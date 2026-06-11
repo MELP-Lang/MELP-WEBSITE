@@ -50,10 +50,13 @@
         <!-- Uyarı: metodoloji -->
         <div class="bench-note" style="border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg-secondary));">
           <b>STAGE7 — 11 Haziran 2026 (PD_52 PLAN_10.5 kapanış)</b><br>
-          Golden 178536 byte · 95 PASS / 0 FAIL · 0 .sh · KURAL 8/10/12 ✅<br>
-          <strong>Metodoloji:</strong> Tüm testler clang -O2 ile derlenir. Her ölçüm 3 tur, en iyi değer alınır.
-          <strong style="color:var(--warning);">⚠ DCE uyarısı:</strong> "loop 100M (optimizer test)" benchmark'ı derleyici optimizasyon
-          seviyesini ölçer — CPU performansını değil. Detaylar aşağıda.<br>
+          Golden 178536 byte · 95 PASS / 0 FAIL · 0 .sh · KURAL 8/10/12 ✅<br><br>
+          <strong style="color:var(--success);">🟢 Performans özeti:</strong>
+          MELP, optimizer tarafından silinemeyen gerçek iş yüklerinde (fib, primes, string builder)
+          Rust ile aynı seviyede veya önde. fib(40): MELP 228ms vs Rust 247ms.
+          OK aktif (PLAN_11) ile daha fazla kazanım bekleniyor.<br><br>
+          <strong style="color:var(--warning);">⚠ Metodoloji:</strong> Tüm testler clang -O2 / gcc -O2 ile derlenir.
+          Her ölçüm 3 tur, en iyi değer alınır. "loop 100M" CPU testi değil, optimizer testidir.
           <strong>OK aktif sütunu PLAN_11 sonrası doldurulacaktır.</strong>
         </div>
 
@@ -204,8 +207,9 @@
             </div>
             <p style="font-size:0.73rem;color:var(--text-muted);margin-top:0.5rem;">
               ⚠️ <strong>Bu test CPU hızını değil, derleyicinin ölü kodu ne kadar agresif sildiğini ölçer.</strong>
-              Döngü gövdesinde yan etki olmadığı için optimizer döngüyü tamamen kaldırır ve sonucu sabit olarak hesaplar.
-              GCC -O2 döngüyü silmez (130ms), MELP ve Rust LLVM tabanlı oldukları için siler (2ms).
+              Döngü gövdesinde yan etki olmadığı için optimizer döngüyü tamamen kaldırabilir.
+              Bu benchmarkta GCC sürümü/test yapısı döngüyü elimine etmemiştir (130ms);
+              Rust ve MELP LLVM tabanlı oldukları için elimine etmiştir (2ms).
               Gerçek CPU performansı için <strong>fib(40)</strong> ve <strong>primes</strong> testlerine bakın.
             </p>
           </div>
