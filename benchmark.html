@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MELP Benchmark — STAGE7 performans karşılaştırması. OK pasif vs OK aktif.">
+  <title>Benchmark — MELP</title>
+  <link rel="shortcut icon" type="image/x-icon" href="assets/melp-logo.ico">
+  <link rel="icon" type="image/png" href="assets/melp-logo.png">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header>
+    <nav>
+      <a href="index.html" class="nav-logo">
+        <img src="assets/melp-logo.svg" alt="MELP Logo" width="32" height="32">
+        MELP <span style="font-size:0.7em; font-weight:400; opacity:0.6;">(alfa)</span>
+      </a>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="index.html">Ana Sayfa</a></li>
+        <li><a href="ozellikler.html">Özellikler</a></li>
+        <li><a href="kurulum.html">Kurulum</a></li>
+        <li><a href="docs.html">Dokümanlar</a></li>
+        <li><a href="benchmark.html" class="active">Benchmark</a></li>
+        <li><a href="inventory.html">Envanter</a></li>
+        <li><a href="./web-ide/" target="_blank" rel="noopener" class="btn-nav">Hemen Dene →</a></li>
+      </ul>
+      <div class="theme-toggle">
+        <button class="theme-btn" data-theme="dark" title="Koyu tema" aria-label="Koyu tema">🌙</button>
+        <button class="theme-btn" data-theme="light" title="Açık tema" aria-label="Açık tema">☀️</button>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Menü">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <section style="padding-top:3.5rem;padding-bottom:1rem;">
+      <span class="section-label">Performans</span>
+      <h1 style="font-size:2.4rem;margin-bottom:0.5rem;">Benchmark</h1>
+      <p class="muted">STAGE7 — Çelik Çekirdek · 11 Haziran 2026 · Linux x86-64 · LLVM 22.1 · her ölçüm 3 tur minimum</p>
+    </section>
+
+    <section>
+      <div class="bench-wrap" style="padding:0 1.5rem;">
+
+        <!-- Uyarı: güncel -->
+        <div class="bench-note" style="border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg-secondary));">
+          <b>STAGE7 — 11 Haziran 2026 (PD_52 PLAN_10.5 kapanış)</b>
+          Golden 178536 byte · 95 PASS / 0 FAIL · 0 .sh · KURAL 8/10/12 ✅
+          <strong>OK aktif sütunu PLAN_11 sonrası doldurulacaktır.</strong>
+        </div>
+
+        <!-- ===== OK PASİF vs OK AKTİF ===== -->
+        <div class="bench-group">
+          <p class="bench-group-title">Çalışma süresi &nbsp;(ms) &nbsp;— düşük daha iyi</p>
+
+          <!-- fib(40) -->
+          <div class="bench-card">
+            <div class="bench-card-title">
+              <strong>fib(40)</strong>
+              <span>recursive Fibonacci — ölçek: en iyi 167ms (GCC -O2)</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">GCC -O2</span>
+              <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
+              <span class="bench-val is-best">167 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label is-melp">MELP (OK pasif)</span>
+              <div class="bench-track"><div class="bench-bar is-melp" style="width:73%"></div></div>
+              <span class="bench-val is-melp">228 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
+              <div class="bench-track"><div class="bench-bar" style="width:0%;opacity:0.2;background:var(--accent-alt);"></div></div>
+              <span class="bench-val" style="color:var(--accent-alt);opacity:0.6;">— PLAN_11</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">Rust Release</span>
+              <div class="bench-track"><div class="bench-bar" style="width:68%"></div></div>
+              <span class="bench-val">247 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">Go</span>
+              <div class="bench-track"><div class="bench-bar" style="width:40%"></div></div>
+              <span class="bench-val">421 ms</span>
+            </div>
+            <hr class="bench-divider">
+            <div class="bench-row">
+              <span class="bench-label">Python 3</span>
+              <div class="bench-track"><div class="bench-bar" style="width:100%;opacity:0.35"></div></div>
+              <span class="bench-val" style="font-size:0.72rem;">11 984 ms</span>
+            </div>
+          </div>
+
+          <!-- primes -->
+          <div class="bench-card">
+            <div class="bench-card-title">
+              <strong>primes</strong>
+              <span>asal sayılar ≤ 100 000 — ölçek: en iyi 6ms (GCC -O2)</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">GCC -O2</span>
+              <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
+              <span class="bench-val is-best">6 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label is-melp">MELP (OK pasif)</span>
+              <div class="bench-track"><div class="bench-bar is-melp" style="width:75%"></div></div>
+              <span class="bench-val is-melp">8 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
+              <div class="bench-track"><div class="bench-bar" style="width:0%;opacity:0.2;background:var(--accent-alt);"></div></div>
+              <span class="bench-val" style="color:var(--accent-alt);opacity:0.6;">— PLAN_11</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">Rust Release</span>
+              <div class="bench-track"><div class="bench-bar" style="width:86%"></div></div>
+              <span class="bench-val">7 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">Go</span>
+              <div class="bench-track"><div class="bench-bar" style="width:29%"></div></div>
+              <span class="bench-val">21 ms</span>
+            </div>
+            <hr class="bench-divider">
+            <div class="bench-row">
+              <span class="bench-label">Python 3</span>
+              <div class="bench-track"><div class="bench-bar" style="width:100%;opacity:0.35"></div></div>
+              <span class="bench-val" style="font-size:0.72rem;">301 ms</span>
+            </div>
+          </div>
+
+          <!-- string builder -->
+          <div class="bench-card">
+            <div class="bench-card-title">
+              <strong>string builder 100K</strong>
+              <span>100 000 string birleştirme — ölçek: MELP 3ms 🚀</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">C (GCC -O2)</span>
+              <div class="bench-track"><div class="bench-bar" style="width:6%"></div></div>
+              <span class="bench-val">48 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label is-melp">MELP (OK pasif)</span>
+              <div class="bench-track"><div class="bench-bar is-melp is-best" style="width:100%"></div></div>
+              <span class="bench-val is-melp is-best">3 ms 🚀</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
+              <div class="bench-track"><div class="bench-bar" style="width:0%;opacity:0.2;background:var(--accent-alt);"></div></div>
+              <span class="bench-val" style="color:var(--accent-alt);opacity:0.6;">— PLAN_11</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">Rust Release</span>
+              <div class="bench-track"><div class="bench-bar" style="width:24%"></div></div>
+              <span class="bench-val">2 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">Go</span>
+              <div class="bench-track"><div class="bench-bar" style="width:11%"></div></div>
+              <span class="bench-val">454 ms</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== MELP-Only ===== -->
+        <div class="bench-group">
+          <p class="bench-group-title">MELP özel benchmark'ları &nbsp;(ms) &nbsp;— STAGE7</p>
+
+          <div class="bench-card">
+            <div class="bench-card-title">
+              <strong>loop 100M</strong>
+              <span>100 milyon boş döngü — ölçek: en iyi 2ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">GCC -O2</span>
+              <div class="bench-track"><div class="bench-bar" style="width:2%"></div></div>
+              <span class="bench-val">130 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label is-melp">MELP (OK pasif)</span>
+              <div class="bench-track"><div class="bench-bar is-melp is-best" style="width:100%"></div></div>
+              <span class="bench-val is-melp is-best">2 ms 🚀</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
+              <div class="bench-track"><div class="bench-bar" style="width:0%;opacity:0.2;background:var(--accent-alt);"></div></div>
+              <span class="bench-val" style="color:var(--accent-alt);opacity:0.6;">— PLAN_11</span>
+            </div>
+          </div>
+
+          <div class="bench-card">
+            <div class="bench-card-title">
+              <strong>string concat 100K (&amp;)</strong>
+              <span>eski API — 100 000 birleştirme</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">GCC -O2</span>
+              <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
+              <span class="bench-val is-best">48 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label is-melp">MELP (OK pasif)</span>
+              <div class="bench-track"><div class="bench-bar is-melp" style="width:3%"></div></div>
+              <span class="bench-val is-melp">1758 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
+              <div class="bench-track"><div class="bench-bar" style="width:0%;opacity:0.2;background:var(--accent-alt);"></div></div>
+              <span class="bench-val" style="color:var(--accent-alt);opacity:0.6;">— PLAN_11</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dipnot -->
+        <div class="bench-footer">
+          <span>Yeşil = o grafikteki en iyi değer. Turuncu = MELP. Mavi = OK aktif (PLAN_11 sonrası).</span><br>
+          <span>Rust değeri <strong>release</strong> · Go değeri <strong>go build</strong> · MELP değeri tam native pipeline (clang -O2).</span><br>
+          <span style="font-size:0.73rem;">Kaynak: <code>LLVM/STAGE7/BENCHMARK_OZET.md</code> — 11 Haziran 2026, PD_52 PLAN_10.5 kapanış.</span>
+        </div>
+
+        <!-- Tarihsel ilerleme -->
+        <div class="bench-group" style="margin-top:3rem;">
+          <p class="bench-group-title">Tarihsel İlerleme — MELP fib(40)</p>
+          <div class="bench-card">
+            <table style="width:100%;font-size:0.85rem;">
+              <thead><tr><th>Tarih</th><th>Derleyici</th><th>fib(40)</th><th>Not</th></tr></thead>
+              <tbody>
+                <tr><td>8 Haz</td><td>STAGE6</td><td>❌</td><td>kullanıcı kodu çalışmıyor</td></tr>
+                <tr><td>11 Haz</td><td>STAGE7 (PD_51)</td><td>298ms</td><td>PLAN_10 generics eklendi</td></tr>
+                <tr style="color:var(--accent);font-weight:600;"><td>11 Haz</td><td>STAGE7 (PD_52)</td><td>228ms</td><td>PLAN_10.5 — %23 iyileşme 🚀</td></tr>
+                <tr style="color:var(--accent-alt);opacity:0.6;"><td>—</td><td>STAGE7 (OK aktif)</td><td>—</td><td>PLAN_11 sonrası</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <h2>Kendi Testinizi Yapın</h2>
+      <p>STAGE7 derleyicisiyle benchmark'ları yerel makinenizde koşabilirsiniz.</p>
+      <div class="btn-group" style="justify-content:center;">
+        <a href="kurulum.html" class="btn btn-outline">Kurulum</a>
+        <a href="https://github.com/MELP-Lang/MELP" target="_blank" rel="noopener" class="btn btn-primary">GitHub →</a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer>
+    <p>© 2026 MELP. MIT Lisansı.</p>
+    <p style="margin-top:0.5rem;">
+      <a href="https://github.com/MELP-Lang/MELP" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://x.com/Acar_Kodlama" target="_blank" rel="noopener">X</a>
+      <a href="mailto:info@melp.dev">info@melp.dev</a>
+    </p>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById('navToggle');
+    const links  = document.getElementById('navLinks');
+    toggle.addEventListener('click', () => links.classList.toggle('open'));
+    (function() {
+      const btns = document.querySelectorAll('.theme-btn');
+      const stored = localStorage.getItem('melp-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', stored);
+      btns.forEach(b => b.classList.toggle('active', b.dataset.theme === stored));
+      btns.forEach(b => b.addEventListener('click', () => {
+        document.documentElement.setAttribute('data-theme', b.dataset.theme);
+        localStorage.setItem('melp-theme', b.dataset.theme);
+        btns.forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+      }));
+    })();
+  </script>
+
+</body>
+</html>

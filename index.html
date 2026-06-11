@@ -23,6 +23,7 @@
         <li><a href="ozellikler.html">Özellikler</a></li>
         <li><a href="kurulum.html">Kurulum</a></li>
         <li><a href="docs.html">Dokümanlar</a></li>
+        <li><a href="benchmark.html">Benchmark</a></li>
         <li><a href="inventory.html">Envanter</a></li>
         <li><a href="./web-ide/" target="_blank" rel="noopener" class="btn-nav">Hemen Dene →</a></li>
       </ul>
@@ -61,8 +62,8 @@
       <!-- Selfhosting milestone banner -->
       <div style="margin-top:1.5rem;padding:0.85rem 1.25rem;background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(16,185,129,0.08));border:1px solid rgba(34,197,94,0.35);border-radius:10px;max-width:560px;margin-left:auto;margin-right:auto;text-align:center;">
         <p style="margin:0;font-size:0.95rem;line-height:1.6;">
-          🎉 <strong>21 Mayıs 2026 —</strong> TAM self-hosting: MELP kendini %100 derleyebiliyor.<br>
-          <span style="opacity:0.8;font-size:0.88rem;">59 modül · Gen6 ≡ Gen7 (MD5 identical) · 170/170 PASS · Py-free orkestrasyon</span>
+          🎉 <strong>11 Haziran 2026 —</strong> STAGE7: Generics + STDLIB + 0 .sh<br>
+          <span style="opacity:0.8;font-size:0.88rem;">95 PASS / 0 FAIL · 178536 byte golden · KURAL 8/10/12 ✅ · PLAN_10.5 tamam</span>
         </p>
       </div>
     </section>
@@ -237,14 +238,14 @@
         <div class="section-header">
           <span class="section-label">Performans</span>
           <h2>Rakamlarla MELP</h2>
-          <p>21 Mayıs 2026 &nbsp;·&nbsp; Linux x86-64 &nbsp;·&nbsp; LLVM 22.1.6 &nbsp;·&nbsp; her ölçüm minimum 3 tur ortalaması</p>
+          <p>11 Haziran 2026 &nbsp;·&nbsp; STAGE7 &nbsp;·&nbsp; Linux x86-64 &nbsp;·&nbsp; LLVM 22.1 &nbsp;·&nbsp; 3 tur ortalaması</p>
         </div>
 
         <!-- Uyarı: alfa -->
         <div class="bench-note">
-          <b>Alfa sürümü — bu rakamlar nihai değil</b>
-          STAGE4 Gen4 derleyici tüm benchmark testlerinde STAGE0 C++ derleyicisini geçmiştir.
-          WASM backend aktif geliştirme aşamasındadır — <strong>Web IDE ölçümleri aşağıdaki native rakamlarla karşılaştırılmamalıdır.</strong>
+          <b>STAGE7 — Stable</b>
+          OK pasif ölçümler. OK aktif (PLAN_11) sonrası güncellenecektir.
+          <strong>Tüm benchmark detayları için:</strong> <a href="benchmark.html" style="color:var(--accent);">benchmark.html →</a>
         </div>
 
         <!-- ─── Çalışma Süresi ─────────────────────── -->
@@ -308,8 +309,8 @@
             </div>
             <div class="bench-row">
               <span class="bench-label is-melp">MELP -O2</span>
-              <div class="bench-track"><div class="bench-bar is-melp" style="width:33%"></div></div>
-              <span class="bench-val is-melp">7 ms</span>
+              <div class="bench-track"><div class="bench-bar is-melp" style="width:38%"></div></div>
+              <span class="bench-val is-melp">8 ms</span>
             </div>
             <div class="bench-row">
               <span class="bench-label">GCC -O0</span>
@@ -329,10 +330,37 @@
             </div>
           </div>
 
+          <!-- string builder -->
+          <div class="bench-card">
+            <div class="bench-card-title">
+              <strong>string builder 100K</strong>
+              <span>100 000 birleştirme — 🆕 STAGE7</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">C (GCC -O2)</span>
+              <div class="bench-track"><div class="bench-bar" style="width:6%"></div></div>
+              <span class="bench-val">48 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label is-melp">MELP -O2</span>
+              <div class="bench-track"><div class="bench-bar is-melp is-best" style="width:100%"></div></div>
+              <span class="bench-val is-melp is-best">3 ms 🚀</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">Rust Release</span>
+              <div class="bench-track"><div class="bench-bar" style="width:150%"></div></div>
+              <span class="bench-val">2 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">Go</span>
+              <div class="bench-track"><div class="bench-bar" style="width:66%"></div></div>
+              <span class="bench-val">454 ms</span>
+            </div>
+          </div>
+
           <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem;">
-            <strong style="color:var(--text-primary);">lambda_closure</strong> ve
-            <strong style="color:var(--text-primary);">pipe_chain</strong>
-            bu makinede tüm dillerde 1 ms — zamanlayıcı tabanına çarpıyor, anlamlı fark yok.
+            <strong style="color:var(--accent);">Detaylı benchmark:</strong>
+            <a href="benchmark.html" style="color:var(--accent);">OK pasif vs OK aktif karşılaştırması, loop 100M, tarihsel ilerleme →</a>
           </p>
         </div>
 
@@ -411,7 +439,7 @@
         <div class="bench-footer">
           <span>Yeşil = o grafikteki en iyi değer. Python derleme süresi yok: yorumlanan çalışma modeli.</span><br>
           <span>Rust değeri <strong>release</strong> · Go değeri <strong>go build</strong> · MELP değeri tam native pipeline.</span><br>
-          <span style="font-size:0.73rem;">Kaynak: <code>LLVM/STAGE0/BENCHMARK_SUITES/results/honest_cross_lang_20260403_232020/raw_results.csv</code> — ölçülmeyen hiçbir sayı eklenmemiştir.</span>
+          <span style="font-size:0.73rem;">Kaynak: <code>LLVM/STAGE7/BENCHMARK_OZET.md</code> — 11 Haziran 2026, PD_52. <a href="benchmark.html">Tam benchmark sayfası →</a></span>
         </div>
 
       </div>
