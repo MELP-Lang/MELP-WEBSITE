@@ -47,10 +47,13 @@
     <section>
       <div class="bench-wrap" style="padding:0 1.5rem;">
 
-        <!-- Uyarı: güncel -->
+        <!-- Uyarı: metodoloji -->
         <div class="bench-note" style="border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg-secondary));">
-          <b>STAGE7 — 11 Haziran 2026 (PD_52 PLAN_10.5 kapanış)</b>
-          Golden 178536 byte · 95 PASS / 0 FAIL · 0 .sh · KURAL 8/10/12 ✅
+          <b>STAGE7 — 11 Haziran 2026 (PD_52 PLAN_10.5 kapanış)</b><br>
+          Golden 178536 byte · 95 PASS / 0 FAIL · 0 .sh · KURAL 8/10/12 ✅<br>
+          <strong>Metodoloji:</strong> Tüm testler clang -O2 ile derlenir. Her ölçüm 3 tur, en iyi değer alınır.
+          <strong style="color:var(--warning);">⚠ DCE uyarısı:</strong> "loop 100M (optimizer test)" benchmark'ı derleyici optimizasyon
+          seviyesini ölçer — CPU performansını değil. Detaylar aşağıda.<br>
           <strong>OK aktif sütunu PLAN_11 sonrası doldurulacaktır.</strong>
         </div>
 
@@ -142,6 +145,11 @@
               <strong>string builder 100K</strong>
               <span>100 000 string birleştirme — ölçek: MELP 3ms 🚀</span>
             </div>
+            <p style="font-size:0.73rem;color:var(--text-muted);margin-bottom:0.5rem;">
+              📋 <strong>Metodoloji:</strong> 100K kez tek karakter ekleme. Kapasite önceden ayrılır (4096 byte).
+              Çıktı uzunluğu doğrulanır (len=100000). C ve Rust eşdeğer StringBuilder/String kullanır.
+              Harici fonksiyon çağrıları (malloc) optimizer tarafından silinemez — gerçek performans testidir.
+            </p>
             <div class="bench-row">
               <span class="bench-label">C (GCC -O2)</span>
               <div class="bench-track"><div class="bench-bar" style="width:6%"></div></div>
@@ -170,18 +178,18 @@
           </div>
         </div>
 
-        <!-- ===== MELP-Only ===== -->
+        <!-- ===== Optimizer Testi ===== -->
         <div class="bench-group">
-          <p class="bench-group-title">MELP özel benchmark'ları &nbsp;(ms) &nbsp;— STAGE7</p>
+          <p class="bench-group-title">Derleyici Optimizer Testi &nbsp;(ms) &nbsp;— DCE dedektörü</p>
 
           <div class="bench-card">
             <div class="bench-card-title">
-              <strong>loop 100M</strong>
-              <span>100 milyon boş döngü — ölçek: en iyi 2ms</span>
+              <strong>loop 100M (counter)</strong>
+              <span>100 milyon sayma döngüsü — ⚠️ optimizer testidir, CPU testi DEĞİLDİR</span>
             </div>
             <div class="bench-row">
               <span class="bench-label">GCC -O2</span>
-              <div class="bench-track"><div class="bench-bar" style="width:2%"></div></div>
+              <div class="bench-track"><div class="bench-bar" style="width:15%"></div></div>
               <span class="bench-val">130 ms</span>
             </div>
             <div class="bench-row">
@@ -190,17 +198,28 @@
               <span class="bench-val is-melp is-best">2 ms 🚀</span>
             </div>
             <div class="bench-row">
-              <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
-              <div class="bench-track"><div class="bench-bar" style="width:0%;opacity:0.2;background:var(--accent-alt);"></div></div>
-              <span class="bench-val" style="color:var(--accent-alt);opacity:0.6;">— PLAN_11</span>
+              <span class="bench-label">Rust Release</span>
+              <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
+              <span class="bench-val is-best">2 ms</span>
             </div>
+            <p style="font-size:0.73rem;color:var(--text-muted);margin-top:0.5rem;">
+              ⚠️ <strong>Bu test CPU hızını değil, derleyicinin ölü kodu ne kadar agresif sildiğini ölçer.</strong>
+              Döngü gövdesinde yan etki olmadığı için optimizer döngüyü tamamen kaldırır ve sonucu sabit olarak hesaplar.
+              GCC -O2 döngüyü silmez (130ms), MELP ve Rust LLVM tabanlı oldukları için siler (2ms).
+              Gerçek CPU performansı için <strong>fib(40)</strong> ve <strong>primes</strong> testlerine bakın.
+            </p>
           </div>
+        </div>
 
           <div class="bench-card">
             <div class="bench-card-title">
               <strong>string concat 100K (&amp;)</strong>
-              <span>eski API — 100 000 birleştirme</span>
+              <span>eski API — 100 000 birleştirme (karşılaştırma amaçlı)</span>
             </div>
+            <p style="font-size:0.73rem;color:var(--text-muted);margin-bottom:0.5rem;">
+              📋 Builder API'si olmadan saf string birleştirme. Her birleştirmede yeni allocation.
+              Builder API'sinin neden 647x daha hızlı olduğunu göstermek için referans olarak tutulur.
+            </p>
             <div class="bench-row">
               <span class="bench-label">GCC -O2</span>
               <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
