@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MELP Benchmark — STAGE7 performans karşılaştırması. OK pasif vs OK aktif.">
+  <meta name="description" content="MELP Benchmark — STAGE8 performans karşılaştırması. Düğme 30 kapandı.">
   <title>Benchmark — MELP</title>
   <link rel="shortcut icon" type="image/x-icon" href="assets/melp-logo.ico">
   <link rel="icon" type="image/png" href="assets/melp-logo.png">
@@ -41,7 +41,7 @@
     <section style="padding-top:3.5rem;padding-bottom:1rem;">
       <span class="section-label">Performans</span>
       <h1 style="font-size:2.4rem;margin-bottom:0.5rem;">Benchmark</h1>
-      <p class="muted">STAGE7 — Çelik Çekirdek · 11 Haziran 2026 · Linux x86-64 · LLVM 22.1 · her ölçüm 3 tur minimum</p>
+      <p class="muted">STAGE8 — 23 Haziran 2026 (PD_134) · Linux x86-64 · LLVM 22.1 · her ölçüm 3 tur minimum · Golden 263,448 byte</p>
     </section>
 
     <section>
@@ -49,15 +49,15 @@
 
         <!-- Uyarı: metodoloji -->
         <div class="bench-note" style="border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg-secondary));">
-          <b>STAGE7 — 11 Haziran 2026 (PD_52 PLAN_10.5 kapanış)</b><br>
-          Golden 178536 byte · 95 PASS / 0 FAIL · 0 .sh · KURAL 8/10/12 ✅<br><br>
+          <b>STAGE8 — 23 Haziran 2026 (PD_134)</b><br>
+          Golden 263,448 byte · Düğme 30 kapandı · Standalone derleme ✅<br>
+          <code>melp install</code> · STDLIB 6 modül · E004/E042 hata kodları<br><br>
           <strong style="color:var(--success);">🟢 Performans özeti:</strong>
           MELP, optimizer tarafından silinemeyen gerçek iş yüklerinde (fib, primes, string builder)
-          Rust ile aynı seviyede veya önde. fib(40): MELP 228ms vs Rust 247ms.
-          OK aktif (PLAN_11) ile daha fazla kazanım bekleniyor.<br><br>
-          <strong style="color:var(--warning);">⚠ Metodoloji:</strong> Tüm testler clang -O2 / gcc -O2 ile derlenir.
-          Her ölçüm 3 tur, en iyi değer alınır. "loop 100M" CPU testi değil, optimizer testidir.
-          <strong>OK aktif sütunu PLAN_11 sonrası doldurulacaktır.</strong>
+          Rust ile aynı seviyede. fib(40): MELP ~255ms, primes: 8ms, string builder: ~2ms.
+          Düğme 30 sonrası standalone .mlp dosyaları doğrudan çalışıyor.<br><br>
+          <strong style="color:var(--warning);">⚠ Metodoloji:</strong> Tüm testler clang -O2 ile derlenir.
+          Her ölçüm 3 tur, en iyi değer alınır. "loop 100M" CPU testi değil, optimizer testidir.</strong>
         </div>
 
         <!-- ===== OK PASİF vs OK AKTİF ===== -->
@@ -78,7 +78,7 @@
             <div class="bench-row">
               <span class="bench-label is-melp">MELP (OK pasif)</span>
               <div class="bench-track"><div class="bench-bar is-melp" style="width:73%"></div></div>
-              <span class="bench-val is-melp">228 ms</span>
+              <span class="bench-val is-melp">~255 ms</span>
             </div>
             <div class="bench-row">
               <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
@@ -161,7 +161,7 @@
             <div class="bench-row">
               <span class="bench-label is-melp">MELP (OK pasif)</span>
               <div class="bench-track"><div class="bench-bar is-melp is-best" style="width:100%"></div></div>
-              <span class="bench-val is-melp is-best">3 ms 🚀</span>
+              <span class="bench-val is-melp is-best">~2 ms 🚀</span>
             </div>
             <div class="bench-row">
               <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
@@ -246,7 +246,7 @@
         <div class="bench-footer">
           <span>Yeşil = o grafikteki en iyi değer. Turuncu = MELP. Mavi = OK aktif (PLAN_11 sonrası).</span><br>
           <span>Rust değeri <strong>release</strong> · Go değeri <strong>go build</strong> · MELP değeri tam native pipeline (clang -O2).</span><br>
-          <span style="font-size:0.73rem;">Kaynak: <code>LLVM/STAGE7/BENCHMARK_OZET.md</code> — 11 Haziran 2026, PD_52 PLAN_10.5 kapanış.</span>
+          <span style="font-size:0.73rem;">Kaynak: <code>LLVM/STAGE8/BENCHMARK_OZET.md</code> — 23 Haziran 2026, PD_134. Golden 263,448 byte.</span>
         </div>
 
         <!-- Tarihsel ilerleme -->
@@ -259,7 +259,8 @@
                 <tr><td>8 Haz</td><td>STAGE6</td><td>❌</td><td>kullanıcı kodu çalışmıyor</td></tr>
                 <tr><td>11 Haz</td><td>STAGE7 (PD_51)</td><td>298ms</td><td>PLAN_10 generics eklendi</td></tr>
                 <tr style="color:var(--accent);font-weight:600;"><td>11 Haz</td><td>STAGE7 (PD_52)</td><td>228ms</td><td>PLAN_10.5 — %23 iyileşme 🚀</td></tr>
-                <tr style="color:var(--accent-alt);opacity:0.6;"><td>—</td><td>STAGE7 (OK aktif)</td><td>—</td><td>PLAN_11 sonrası</td></tr>
+                <tr style="color:var(--success);font-weight:600;"><td>23 Haz</td><td>STAGE8 (PD_134)</td><td>~255ms</td><td>Self-hosting ✅ Düğme 30 kapandı</td></tr>
+                <tr style="color:var(--accent-alt);opacity:0.6;"><td>—</td><td>STAGE8 (OK aktif)</td><td>—</td><td>PLAN_11 sonrası</td></tr>
               </tbody>
             </table>
           </div>
@@ -270,7 +271,7 @@
 
     <section class="cta-section">
       <h2>Kendi Testinizi Yapın</h2>
-      <p>STAGE7 derleyicisiyle benchmark'ları yerel makinenizde koşabilirsiniz.</p>
+      <p>STAGE8 derleyicisiyle benchmark'ları yerel makinenizde koşabilirsiniz.</p>
       <div class="btn-group" style="justify-content:center;">
         <a href="kurulum.html" class="btn btn-outline">Kurulum</a>
         <a href="https://github.com/MELP-Lang/MELP" target="_blank" rel="noopener" class="btn btn-primary">GitHub →</a>
