@@ -51,11 +51,22 @@ async function execWasm(wasmBytes) {
             const len   = mem.getUint32(iovPtr + i * 8 + 4, true);
             const bytes = new Uint8Array(instance.exports.memory.buffer, base, len);
             const chunk = new TextDecoder().decode(bytes);
-            self.postMessage({ type: 'run-stdout', stdout: chunk });
+            if (fd === 1) self.postMessage({ type: 'run-stdout', stdout: chunk });
+            else if (fd === 2) self.postMessage({ type: 'run-stderr', stderr: chunk });
             written += len;
           }
           mem.setUint32(nwrittenPtr, written, true);
         } catch(e) { /* ignore */ }
+        return 0;
+      },
+      fd_fdstat_get: function(fd, buf) {
+        try {
+          const dv = new DataView(instance.exports.memory.buffer);
+          dv.setUint8(buf, 2);       // CHARACTER_DEVICE
+          dv.setUint16(buf + 2, 0, true);
+          dv.setBigUint64(buf + 8, 0n, true);
+          dv.setBigUint64(buf + 16, 0n, true);
+        } catch(e) {}
         return 0;
       },
       proc_exit(code)        { throw { exitCode: code }; },
