@@ -1,8 +1,7 @@
 -- Ornek 2: Degiskenler ve Aritmetik
-numeric function main()
+function main()
     numeric a = 10
     numeric b = 20
     numeric c = a + b
     println(str(c))
-    return 0
 end function

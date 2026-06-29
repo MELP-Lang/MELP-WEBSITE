@@ -1,9 +1,8 @@
 -- Ornek 10: Dizi Taklidi (shell_exec + ls)
-numeric function main()
+function main()
     println("Dosyalariniz:")
     numeric rc = shell_exec("ls -1 /tmp > /tmp/melp_ls_out")
     string listing = mlp_fs_read_to_string("/tmp/melp_ls_out")
     println(listing)
     rc = shell_exec("rm -f /tmp/melp_ls_out")
-    return 0
 end function

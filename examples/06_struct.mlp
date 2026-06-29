@@ -4,10 +4,9 @@ struct Nokta
     numeric y
 end struct
 
-numeric function main()
+function main()
     Nokta p
     p.x = 10
     p.y = 20
     println("x=" & str(p.x) & " y=" & str(p.y))
-    return 0
 end function

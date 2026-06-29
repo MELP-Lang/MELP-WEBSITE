@@ -1,5 +1,4 @@
 -- Ornek 1: Merhaba Dunya
-numeric function main()
+function main()
     println("Merhaba MELP!")
-    return 0
 end function

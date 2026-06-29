@@ -3,8 +3,7 @@ numeric function kare(numeric x)
     return x * x
 end function
 
-numeric function main()
+function main()
     numeric sonuc = kare(7)
     println("7^2 = " & str(sonuc))
-    return 0
 end function
