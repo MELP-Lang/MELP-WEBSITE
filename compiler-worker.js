@@ -158,30 +158,34 @@ async function handleCompile(code, run) {
 
   self.postMessage({ type: 'run-start' });
 
-  let result;
+  // Use proven MelpWasm runtime instead of custom execWasm
   try {
-    result = await execWasm(wasmBytes);
+    MelpWasm.clearOutput();
+    await MelpWasm.load(wasmBytes.buffer);
+    MelpWasm.run();
+    const output = MelpWasm.getOutput();
+    const exitCode = MelpWasm.getExitCode();
+    if (output) self.postMessage({ type: 'run-stdout', stdout: output });
+    self.postMessage({ type: 'run-exit', exitCode });
   } catch (err) {
     self.postMessage({ type: 'run-stderr', stderr: err.message });
-    self.postMessage({ type: 'run-exit',   exitCode: 1 });
-    return;
+    self.postMessage({ type: 'run-exit', exitCode: 1 });
   }
-
-  if (_cancelled) { self.postMessage({ type: 'run-cancel' }); return; }
-
-  if (result.stderr) self.postMessage({ type: 'run-stderr', stderr: result.stderr });
-  self.postMessage({ type: 'run-exit', exitCode: result.exitCode });
 }
 
 // melp_compiler.js'i Worker scope'una yükle
 try {
   importScripts('./wasm/melp_compiler.js');
+  importScripts('./melp_wasm.js');  // MelpWasm: proven WASI runtime with output capture
 } catch (e) {
   // path hatası olursa loadMelpModule() içinde yakalanır
 }
 
 // Modülü önceden yükle, hazır olunca bildir
-loadMelpModule()
+Promise.all([
+  loadMelpModule(),
+  new Promise(r => { if (typeof MelpWasm !== 'undefined') r(); else setTimeout(r, 100); })
+])
   .then(() => self.postMessage({ type: 'worker-ready' }))
   .catch(() => self.postMessage({ type: 'worker-ready' })); // hata olsa da UI'yi bloke etme
 
