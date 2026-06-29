@@ -1,0 +1,10 @@
+-- Ornek 8: HTTP Istegi (curl gerekir)
+numeric function main()
+    println("Web'den veri cekiliyor...")
+    numeric rc = shell_exec("curl -s https://example.com > /tmp/melp_web_out")
+    string html = mlp_fs_read_to_string("/tmp/melp_web_out")
+    println("Ilk 200 karakter:")
+    println(substring(html; 0; 200))
+    rc = shell_exec("rm -f /tmp/melp_web_out")
+    return 0
+end function

@@ -1,0 +1,11 @@
+-- Ornek 9: Kullanicidan Girdi (stdin)
+numeric function main()
+    println("Adiniz nedir?")
+    string isim = mlp_stdin_read()
+    if len(isim) > 0 then
+        println("Merhaba, " & isim & "!")
+    else
+        println("Girdi alinamadi")
+    end if
+    return 0
+end function

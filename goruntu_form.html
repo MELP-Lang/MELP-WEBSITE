@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>MELP Görüntü Dönüştürücü</title>
+<style>
+body { font-family: system-ui; max-width: 500px; margin: 50px auto; background: #1e1e2e; color: #cdd6f4; }
+h1 { color: #89b4fa; }
+.card { background: #313244; padding: 20px; border-radius: 12px; }
+input, select, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #45475a; background: #1e1e2e; color: #cdd6f4; font-size: 14px; }
+button { background: #89b4fa; color: #1e1e2e; font-weight: bold; cursor: pointer; }
+button:hover { background: #b4befe; }
+.result { margin-top: 15px; padding: 12px; border-radius: 8px; }
+.success { background: #1a3320; border: 1px solid #40a02b; color: #a6e3a1; }
+.error { background: #331a1a; border: 1px solid #e64553; color: #f38ba8; }
+.info { font-size: 12px; color: #6c7086; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="card">
+<h1>🖼️ MELP Görüntü Dönüştürücü</h1>
+<p>BORU-5 + ImageMagick ile native dönüştürme</p>
+
+<label>Kaynak Dosya:</label>
+<input type="file" id="fileInput" accept="image/*" onchange="updatePath()">
+
+<label>veya Dosya Yolu:</label>
+<input type="text" id="pathInput" placeholder="/home/pardus/resim.jpg">
+
+<label>Hedef Format:</label>
+<select id="formatSelect">
+<option value="png">PNG</option>
+<option value="jpg">JPEG</option>
+<option value="bmp">BMP</option>
+<option value="webp">WEBP</option>
+<option value="gif">GIF</option>
+</select>
+
+<button onclick="convertImage()">🔄 Dönüştür</button>
+
+<div id="result"></div>
+</div>
+<div class="info">
+🟢 BORU-5 C01 · ImageMagick 7.1<br>
+🔧 Backend: MELP binary (33KB) + shell_exec<br>
+📐 Tasarım: Figma → HTML/CSS
+</div>
+
+<script>
+function updatePath() {
+    const f = document.getElementById('fileInput').files[0];
+    if (f) document.getElementById('pathInput').value = f.name;
+}
+
+async function convertImage() {
+    const path = document.getElementById('pathInput').value;
+    const format = document.getElementById('formatSelect').value;
+    const resultDiv = document.getElementById('result');
+    
+    if (!path) {
+        resultDiv.innerHTML = '<div class="result error">Lütfen bir dosya seçin</div>';
+        return;
+    }
+    
+    resultDiv.innerHTML = '<div class="result">⏳ Dönüştürülüyor...</div>';
+    
+    try {
+        // MELP binary'sini çağır (Web API uzerinden)
+        const resp = await fetch('/api/convert', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({source: path, format: format})
+        });
+        const data = await resp.json();
+        
+        if (data.ok) {
+            resultDiv.innerHTML = '<div class="result success">✅ ' + data.message + '<br>📁 ' + data.output + '</div>';
+        } else {
+            resultDiv.innerHTML = '<div class="result error">❌ ' + data.error + '</div>';
+        }
+    } catch(e) {
+        // Fallback: dogrudan MELP binary calistir
+        resultDiv.innerHTML = '<div class="result success">🟡 Web API bulunamadi.<br>Terminalde calistirin:<br><code>/tmp/goruntu_cevirici ' + path + ' ' + format + '</code></div>';
+    }
+}
+</script>
+</body>
+</html>

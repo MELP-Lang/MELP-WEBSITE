@@ -1,0 +1,6 @@
+-- Buton tıklama olayı
+when button_click("btn_donustur")
+    string kaynak = textbox_get("txt_dosya")
+    string format = dropdown_get("fmt_hedef")
+    goruntu_donustur(kaynak; format)
+end when

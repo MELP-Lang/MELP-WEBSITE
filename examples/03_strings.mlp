@@ -1,0 +1,8 @@
+-- Ornek 3: String Birlestirme
+numeric function main()
+    string selam = "Merhaba"
+    string isim = "MELP"
+    string mesaj = selam & " " & isim & "!"
+    println(mesaj)
+    return 0
+end function

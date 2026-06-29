@@ -1,0 +1,10 @@
+-- Ornek 5: Kosul
+numeric function main()
+    numeric yas = 18
+    if yas >= 18 then
+        println("Yetiskin")
+    else
+        println("Cocuk")
+    end if
+    return 0
+end function

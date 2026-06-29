@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>MELP Playground</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#1e1e2e;color:#cdd6f4;height:100vh;display:flex;flex-direction:column}
+header{background:#181825;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #313244;flex-wrap:wrap;gap:8px}
+header h1{font-size:16px;font-weight:600;color:#cba6f7;white-space:nowrap}
+header h1 span{color:#a6e3a1;font-weight:400}
+.toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.btn{padding:6px 14px;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;white-space:nowrap}
+.btn-run{background:#a6e3a1;color:#1e1e2e}
+.btn-run:hover{background:#94e2a1}
+.btn-run:disabled{background:#585b70;color:#cdd6f4;cursor:not-allowed}
+.btn-clear{background:#45475a;color:#cdd6f4}
+.btn-clear:hover{background:#585b70}
+.sel{background:#313244;color:#cdd6f4;border:1px solid #45475a;border-radius:5px;padding:6px 8px;font-size:12px;cursor:pointer}
+main{display:flex;flex:1;overflow:hidden;flex-direction:row}
+@media(max-width:700px){main{flex-direction:column}}
+.editor-panel{flex:1;display:flex;flex-direction:column;border-right:1px solid #313244;min-height:200px}
+@media(max-width:700px){.editor-panel{border-right:none;border-bottom:1px solid #313244}}
+.editor-panel label{font-size:11px;color:#a6adc8;padding:6px 12px;background:#181825;display:flex;justify-content:space-between}
+#editor{flex:1;background:#1e1e2e;color:#cdd6f4;border:none;padding:12px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;line-height:1.5;resize:none;outline:none;tab-size:4}
+.output-panel{flex:1;display:flex;flex-direction:column;min-height:150px}
+.output-panel label{font-size:11px;color:#a6adc8;padding:6px 12px;background:#181825;display:flex;justify-content:space-between}
+#output{flex:1;background:#11111b;color:#cdd6f4;padding:12px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:12px;line-height:1.4;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.error{color:#f38ba8}
+.success{color:#a6e3a1}
+.warn{color:#f9e2af}
+footer{background:#181825;padding:6px 14px;font-size:11px;color:#585b70;text-align:center;border-top:1px solid #313244}
+footer a{color:#cba6f7;text-decoration:none}
+</style>
+</head>
+<body>
+<header>
+    <h1>MELP <span>Playground</span></h1>
+    <div class="toolbar">
+        <select class="sel" id="exampleSelect" onchange="loadExample()">
+            <option value="">📚 Ornekler...</option>
+        </select>
+        <button class="btn btn-clear" onclick="clearOutput()">Temizle</button>
+        <button class="btn btn-run" id="btnRun" onclick="runCode()">▶ Calistir</button>
+    </div>
+</header>
+<main>
+    <div class="editor-panel">
+        <label>📝 MELP Kodu <span id="lineCount"></span></label>
+        <textarea id="editor" spellcheck="false">numeric function main()
+    println("Merhaba MELP!")
+    return 0
+end function</textarea>
+    </div>
+    <div class="output-panel">
+        <label>📤 Cikti <span id="status"></span></label>
+        <div id="output"></div>
+    </div>
+</main>
+<footer>Ctrl+Enter = Calistir · <a href="/api/examples" target="_blank">API</a> · STAGE9.5</footer>
+
+<script>
+const editor=document.getElementById('editor');
+const output=document.getElementById('output');
+const btnRun=document.getElementById('btnRun');
+const status=document.getElementById('status');
+const exampleSelect=document.getElementById('exampleSelect');
+const lineCount=document.getElementById('lineCount');
+let examples=[];
+
+editor.addEventListener('keydown',function(e){
+    if(e.key==='Tab'){e.preventDefault();const s=this.selectionStart;const en=this.selectionEnd;this.value=this.value.substring(0,s)+'    '+this.value.substring(en);this.selectionStart=this.selectionEnd=s+4}
+    if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();runCode()}
+});
+editor.addEventListener('input',()=>{lineCount.textContent=editor.value.split('\n').length+' satir'});
+
+async function loadExamples(){
+    try{const r=await fetch('/api/examples');examples=await r.json();exampleSelect.innerHTML='<option value="">📚 Ornekler ('+examples.length+')</option>';examples.forEach((ex,i)=>{exampleSelect.innerHTML+='<option value="'+i+'">'+ex.title+'</option>'})}catch(e){}
+}
+function loadExample(){
+    const i=exampleSelect.value;if(i==='')return;
+    editor.value=examples[i].code;lineCount.textContent=editor.value.split('\n').length+' satir';clearOutput();
+}
+function clearOutput(){output.innerHTML='';status.textContent=''}
+function appendOutput(text,cls){const s=document.createElement('span');s.className=cls||'';s.textContent=text;output.appendChild(s);output.scrollTop=output.scrollHeight}
+
+async function runCode(){
+    const code=editor.value;if(!code.trim())return;
+    btnRun.disabled=true;btnRun.textContent='⏳';status.textContent='derleniyor...';output.innerHTML='';
+    try{
+        const resp=await fetch('/api/compile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+        const result=await resp.json();
+        if(result.error){appendOutput(result.error+'\n','error');status.textContent='hata ✗'}
+        else{if(result.output)appendOutput(result.output,'success');status.textContent='tamam ✓'}
+    }catch(e){appendOutput('Baglanti hatasi: '+e.message+'\n','error');status.textContent='baglanti ✗'}
+    btnRun.disabled=false;btnRun.textContent='▶ Calistir';
+}
+loadExamples();lineCount.textContent=editor.value.split('\n').length+' satir';
+</script>
+</body>
+</html>

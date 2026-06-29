@@ -1,0 +1,9 @@
+-- Ornek 4: Dongu
+numeric function main()
+    numeric i = 0
+    loop i < 5
+        println("Sayi: " & str(i))
+        i = i + 1
+    end loop
+    return 0
+end function
