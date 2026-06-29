@@ -108,7 +108,14 @@ function appendOutput(text,cls){const s=document.createElement('span');s.classNa
 async function checkServer(){
     try{
         const r = await fetch('/api/examples', {method:'GET', signal: AbortSignal.timeout(3000)});
-        serverAvailable = r.ok;
+        // GitHub Pages returns 200 for 404s (soft-404) — verify actual JSON
+        const ct = r.headers.get('content-type') || '';
+        if(!r.ok || !ct.includes('application/json')){
+            serverAvailable = false;
+            return;
+        }
+        const data = await r.json();
+        serverAvailable = Array.isArray(data) && data.length > 0;
     }catch(e){ serverAvailable = false; }
 }
 
