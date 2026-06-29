@@ -162,8 +162,28 @@ function initWorker(){
     }
 }
 
+// ── MLP → pmlp normalizer (WASM derleyici pmlp bekler) ──
+function normalizeMlp(code){
+    // Block terminators: "end X" → "end_X"
+    code = code.replace(/end function/gi, 'end_function');
+    code = code.replace(/end if/gi, 'end_if');
+    code = code.replace(/end loop/gi, 'end_loop');
+    code = code.replace(/end struct/gi, 'end_struct');
+    code = code.replace(/end save/gi, 'end_save');
+    code = code.replace(/end outer/gi, 'end_outer');
+    code = code.replace(/end for/gi, 'end_for');
+    code = code.replace(/end while/gi, 'end_while');
+    // Else if → else_if
+    code = code.replace(/else if/gi, 'else_if');
+    // Add #lang directive if missing
+    if(!code.match(/^#lang /m)){
+        code = '#lang english\n#syntax mlp\n' + code;
+    }
+    return code;
+}
+
 function runCode(){
-    const code = editor.value;
+    const code = normalizeMlp(editor.value);
     if(!code.trim()) return;
 
     if(!workerReady){
