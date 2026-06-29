@@ -109,6 +109,7 @@ function appendOutput(text,cls){const s=document.createElement('span');s.classNa
 function initWorker(){
     try{
         worker = new Worker('compiler-worker.js');
+        let _hadOutput = false;
         worker.onmessage = function(e){
             const msg = e.data;
             switch(msg.type){
@@ -118,10 +119,11 @@ function initWorker(){
                     btnRun.disabled = false;
                     break;
                 case 'compile-start':
+                    _hadOutput = false;
                     status.textContent = 'derleniyor...';
                     break;
                 case 'compile-success':
-                    status.textContent = 'calisiyor...';
+                    status.textContent = 'calisiyor... (' + (msg.size||'?') + 'B WASM)';
                     break;
                 case 'compile-error':
                     appendOutput(msg.stderr+'\n','error');
@@ -130,12 +132,18 @@ function initWorker(){
                     btnRun.textContent = '▶ Calistir';
                     break;
                 case 'run-stdout':
+                    _hadOutput = true;
                     appendOutput(msg.stdout,'success');
                     break;
                 case 'run-stderr':
+                    _hadOutput = true;
                     appendOutput(msg.stderr,'error');
                     break;
                 case 'run-exit':
+                    if (!_hadOutput) {
+                        if (msg.exitCode===0) appendOutput('[Derleme basarili, ancak stdout yakalanamadi]\n','warn');
+                        else appendOutput('[Cikis kodu: '+msg.exitCode+', cikti yok]\n','warn');
+                    }
                     if(msg.exitCode===0) status.textContent = 'tamam ✓';
                     else status.textContent = 'cikis '+msg.exitCode;
                     btnRun.disabled = false;
