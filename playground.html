@@ -58,7 +58,7 @@ end function</textarea>
         <div id="output"></div>
     </div>
 </main>
-<footer>Ctrl+Enter = Calistir · <a href="/api/examples" target="_blank">API</a> · STAGE9.5</footer>
+<footer>Ctrl+Enter = Calistir · <a href="https://github.com/MELP-Lang/MELP" target="_blank">GitHub</a> · STAGE10</footer>
 
 <script>
 const editor=document.getElementById('editor');
@@ -67,7 +67,30 @@ const btnRun=document.getElementById('btnRun');
 const status=document.getElementById('status');
 const exampleSelect=document.getElementById('exampleSelect');
 const lineCount=document.getElementById('lineCount');
-let examples=[];
+
+// Server check — bail early on static hosts (GitHub Pages)
+let serverAvailable = false;
+
+// Embedded examples — no /api/examples dependency
+const examples = [
+    {title:"01 — Merhaba Dunya", code:"-- Ornek 1: Merhaba Dunya\nnumeric function main()\n    println(\"Merhaba MELP!\")\n    return 0\nend function\n"},
+    {title:"02 — Degiskenler ve Aritmetik", code:"-- Ornek 2: Degiskenler ve Aritmetik\nnumeric function main()\n    numeric a = 10\n    numeric b = 20\n    numeric c = a + b\n    println(str(c))\n    return 0\nend function\n"},
+    {title:"03 — String Birlestirme", code:"-- Ornek 3: String Birlestirme\nnumeric function main()\n    string selam = \"Merhaba\"\n    string isim = \"MELP\"\n    string mesaj = selam & \" \" & isim & \"!\"\n    println(mesaj)\n    return 0\nend function\n"},
+    {title:"04 — Dongu", code:"-- Ornek 4: Dongu\nnumeric function main()\n    numeric i = 0\n    loop i < 5\n        println(\"Sayi: \" & str(i))\n        i = i + 1\n    end loop\n    return 0\nend function\n"},
+    {title:"05 — Kosul", code:"-- Ornek 5: Kosul\nnumeric function main()\n    numeric yas = 18\n    if yas >= 18 then\n        println(\"Yetiskin\")\n    else\n        println(\"Cocuk\")\n    end if\n    return 0\nend function\n"},
+    {title:"06 — Struct", code:"-- Ornek 6: Struct\nstruct Nokta\n    numeric x\n    numeric y\nend struct\n\nnumeric function main()\n    Nokta p\n    p.x = 10\n    p.y = 20\n    println(\"x=\" & str(p.x) & \" y=\" & str(p.y))\n    return 0\nend function\n"},
+    {title:"07 — Fonksiyon", code:"-- Ornek 7: Fonksiyon\nnumeric function kare(numeric x)\n    return x * x\nend function\n\nnumeric function main()\n    numeric sonuc = kare(7)\n    println(\"7^2 = \" & str(sonuc))\n    return 0\nend function\n"},
+    {title:"08 — HTTP (curl)", code:"-- Ornek 8: HTTP Istegi (curl gerekir)\nnumeric function main()\n    println(\"Web'den veri cekiliyor...\")\n    numeric rc = shell_exec(\"curl -s https://example.com > /tmp/melp_web_out\")\n    string html = mlp_fs_read_to_string(\"/tmp/melp_web_out\")\n    println(\"Ilk 200 karakter:\")\n    println(substring(html; 0; 200))\n    rc = shell_exec(\"rm -f /tmp/melp_web_out\")\n    return 0\nend function\n"},
+    {title:"09 — Kullanicidan Girdi", code:"-- Ornek 9: Kullanicidan Girdi (stdin)\nnumeric function main()\n    println(\"Adiniz nedir?\")\n    string isim = mlp_stdin_read()\n    if len(isim) > 0 then\n        println(\"Merhaba, \" & isim & \"!\")\n    else\n        println(\"Girdi alinamadi\")\n    end if\n    return 0\nend function\n"},
+    {title:"10 — Dosya Listeleme", code:"-- Ornek 10: Dizi Taklidi (shell_exec + ls)\nnumeric function main()\n    println(\"Dosyalariniz:\")\n    numeric rc = shell_exec(\"ls -1 /tmp > /tmp/melp_ls_out\")\n    string listing = mlp_fs_read_to_string(\"/tmp/melp_ls_out\")\n    println(listing)\n    rc = shell_exec(\"rm -f /tmp/melp_ls_out\")\n    return 0\nend function\n"}
+];
+
+function initExamples(){
+    exampleSelect.innerHTML = '<option value="">📚 Ornekler ('+examples.length+')</option>';
+    examples.forEach((ex,i)=>{
+        exampleSelect.innerHTML += '<option value="'+i+'">'+ex.title+'</option>';
+    });
+}
 
 editor.addEventListener('keydown',function(e){
     if(e.key==='Tab'){e.preventDefault();const s=this.selectionStart;const en=this.selectionEnd;this.value=this.value.substring(0,s)+'    '+this.value.substring(en);this.selectionStart=this.selectionEnd=s+4}
@@ -75,9 +98,6 @@ editor.addEventListener('keydown',function(e){
 });
 editor.addEventListener('input',()=>{lineCount.textContent=editor.value.split('\n').length+' satir'});
 
-async function loadExamples(){
-    try{const r=await fetch('/api/examples');examples=await r.json();exampleSelect.innerHTML='<option value="">📚 Ornekler ('+examples.length+')</option>';examples.forEach((ex,i)=>{exampleSelect.innerHTML+='<option value="'+i+'">'+ex.title+'</option>'})}catch(e){}
-}
 function loadExample(){
     const i=exampleSelect.value;if(i==='')return;
     editor.value=examples[i].code;lineCount.textContent=editor.value.split('\n').length+' satir';clearOutput();
@@ -85,9 +105,31 @@ function loadExample(){
 function clearOutput(){output.innerHTML='';status.textContent=''}
 function appendOutput(text,cls){const s=document.createElement('span');s.className=cls||'';s.textContent=text;output.appendChild(s);output.scrollTop=output.scrollHeight}
 
+async function checkServer(){
+    try{
+        const r = await fetch('/api/examples', {method:'GET', signal: AbortSignal.timeout(3000)});
+        serverAvailable = r.ok;
+    }catch(e){ serverAvailable = false; }
+}
+
 async function runCode(){
     const code=editor.value;if(!code.trim())return;
     btnRun.disabled=true;btnRun.textContent='⏳';status.textContent='derleniyor...';output.innerHTML='';
+
+    if(!serverAvailable){
+        appendOutput('ℹ️  Bu statik sunucuda (GitHub Pages) derleme yapilamaz.\n\n','warn');
+        appendOutput('MELP kodunuzu yerel olarak derlemek icin:\n','');
+        appendOutput('  1. Projeyi klonlayin:  git clone https://github.com/MELP-Lang/MELP\n','');
+        appendOutput('  2. STAGE9/demos/  altinda calisan ornekleri inceleyin\n','');
+        appendOutput('  3. node server.js  ile yerel playground baslatin\n','');
+        appendOutput('  4. Veya VS Code MELP uzantisini yukleyin\n\n','');
+        appendOutput('Bu sayfa MELP sozdizimini kesfetmek icin bir editordur.\n','success');
+        appendOutput('Kodu duzenleyip ornekleri inceleyebilirsiniz. ✓\n','success');
+        btnRun.disabled=false;btnRun.textContent='▶ Calistir';
+        status.textContent='statik mod';
+        return;
+    }
+
     try{
         const resp=await fetch('/api/compile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
         const result=await resp.json();
@@ -96,7 +138,10 @@ async function runCode(){
     }catch(e){appendOutput('Baglanti hatasi: '+e.message+'\n','error');status.textContent='baglanti ✗'}
     btnRun.disabled=false;btnRun.textContent='▶ Calistir';
 }
-loadExamples();lineCount.textContent=editor.value.split('\n').length+' satir';
+
+initExamples();
+checkServer();
+lineCount.textContent=editor.value.split('\n').length+' satir';
 </script>
 </body>
 </html>
