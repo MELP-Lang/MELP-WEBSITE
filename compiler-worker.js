@@ -40,20 +40,22 @@ async function loadMelpModule() {
 }
 
 async function execWasm(wasmBytes) {
-  const importObject = {
-    wasi_snapshot_preview1: {
+  function makeWasiImports() {
+    return {
       fd_write(fd, iovPtr, iovCnt, nwrittenPtr) {
-        const mem = new DataView(instance.exports.memory.buffer);
-        let written = 0;
-        for (let i = 0; i < iovCnt; i++) {
-          const base  = mem.getUint32(iovPtr + i * 8,     true);
-          const len   = mem.getUint32(iovPtr + i * 8 + 4, true);
-          const bytes = new Uint8Array(instance.exports.memory.buffer, base, len);
-          const chunk = new TextDecoder().decode(bytes);
-          self.postMessage({ type: 'run-stdout', stdout: chunk });
-          written += len;
-        }
-        mem.setUint32(nwrittenPtr, written, true);
+        try {
+          const mem = new DataView(instance.exports.memory.buffer);
+          let written = 0;
+          for (let i = 0; i < iovCnt; i++) {
+            const base  = mem.getUint32(iovPtr + i * 8,     true);
+            const len   = mem.getUint32(iovPtr + i * 8 + 4, true);
+            const bytes = new Uint8Array(instance.exports.memory.buffer, base, len);
+            const chunk = new TextDecoder().decode(bytes);
+            self.postMessage({ type: 'run-stdout', stdout: chunk });
+            written += len;
+          }
+          mem.setUint32(nwrittenPtr, written, true);
+        } catch(e) { /* ignore */ }
         return 0;
       },
       proc_exit(code)        { throw { exitCode: code }; },
@@ -63,10 +65,40 @@ async function execWasm(wasmBytes) {
       args_sizes_get()       { return 0; },
       clock_time_get()       { return 0; },
       clock_res_get()        { return 0; },
+      fd_close()             { return 0; },
+      fd_seek()              { return 0; },
+      fd_read()              { return 0; },
+      fd_prestat_get()       { return 8; },
+      fd_prestat_dir_name()  { return 8; },
+      fd_fdstat_get()        { return 0; },
+      fd_fdstat_set_flags()  { return 0; },
+      fd_fdstat_set_rights() { return 0; },
+      fd_filestat_get()      { return 0; },
+      fd_filestat_set_size() { return 0; },
+      fd_filestat_set_times(){ return 0; },
+      fd_pread()             { return 0; },
+      fd_pwrite()            { return 0; },
+      fd_readdir()           { return 0; },
+      fd_renumber()          { return 0; },
+      path_open()            { return 52; },
+      path_unlink_file()     { return 52; },
+    };
+  }
+  const wasiImport = makeWasiImports();
+  const importObject = {
+    wasi_snapshot_preview1: wasiImport,
+    wasi_unstable: wasiImport,
+    env: {
+      memory: null,  // filled in after instantiation
+      emscripten_memcpy_js: function(d,s,n) { instance.exports.memory.copy(d,s,n); },
     }
   };
   let instance;
   ({ instance } = await WebAssembly.instantiate(wasmBytes, importObject));
+  // Set memory reference for env.memory import
+  if (importObject.env && instance.exports.memory) {
+    importObject.env.memory = instance.exports.memory;
+  }
   try {
     if (instance.exports._start) {
       instance.exports._start();
@@ -77,6 +109,7 @@ async function execWasm(wasmBytes) {
     if (e && typeof e.exitCode !== 'undefined' && e.exitCode !== 0) {
       return { stderr: `exit code ${e.exitCode}`, exitCode: e.exitCode };
     }
+    return { stderr: e.message || 'Runtime error', exitCode: 1 };
   }
   return { stderr: '', exitCode: 0 };
 }
