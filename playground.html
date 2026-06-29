@@ -57,7 +57,7 @@ end function</textarea>
         <div id="output"></div>
     </div>
 </main>
-<footer>Ctrl+Enter = Calistir · <a href="https://github.com/MELP-Lang/MELP" target="_blank">GitHub</a> · STAGE10</footer>
+<footer>Ctrl+Enter = Calistir · <a href="https://github.com/MELP-Lang/MELP" target="_blank">GitHub</a> · STAGE10 · WASM ✨</footer>
 
 <script>
 const editor=document.getElementById('editor');
@@ -67,10 +67,11 @@ const status=document.getElementById('status');
 const exampleSelect=document.getElementById('exampleSelect');
 const lineCount=document.getElementById('lineCount');
 
-// Server check — bail early on static hosts (GitHub Pages)
-let serverAvailable = false;
+// WASM Worker — tarayici ici derleme
+let worker = null;
+let workerReady = false;
 
-// Embedded examples — no /api/examples dependency
+// Embedded examples
 const examples = [
     {title:"01 — Merhaba Dunya", code:"-- Ornek 1: Merhaba Dunya\nfunction main()\n    println(\"Merhaba MELP!\")\nend function\n"},
     {title:"02 — Degiskenler ve Aritmetik", code:"-- Ornek 2: Degiskenler ve Aritmetik\nfunction main()\n    numeric a = 10\n    numeric b = 20\n    numeric c = a + b\n    println(str(c))\nend function\n"},
@@ -104,50 +105,81 @@ function loadExample(){
 function clearOutput(){output.innerHTML='';status.textContent=''}
 function appendOutput(text,cls){const s=document.createElement('span');s.className=cls||'';s.textContent=text;output.appendChild(s);output.scrollTop=output.scrollHeight}
 
-async function checkServer(){
+// ── WASM Worker ──
+function initWorker(){
     try{
-        const r = await fetch('/api/examples', {method:'GET', signal: AbortSignal.timeout(3000)});
-        // GitHub Pages returns 200 for 404s (soft-404) — verify actual JSON
-        const ct = r.headers.get('content-type') || '';
-        if(!r.ok || !ct.includes('application/json')){
-            serverAvailable = false;
-            return;
-        }
-        const data = await r.json();
-        serverAvailable = Array.isArray(data) && data.length > 0;
-    }catch(e){ serverAvailable = false; }
+        worker = new Worker('compiler-worker.js');
+        worker.onmessage = function(e){
+            const msg = e.data;
+            switch(msg.type){
+                case 'worker-ready':
+                    workerReady = true;
+                    status.textContent = 'hazir ✓';
+                    btnRun.disabled = false;
+                    break;
+                case 'compile-start':
+                    status.textContent = 'derleniyor...';
+                    break;
+                case 'compile-success':
+                    status.textContent = 'calisiyor...';
+                    break;
+                case 'compile-error':
+                    appendOutput(msg.stderr+'\n','error');
+                    status.textContent = 'hata ✗';
+                    btnRun.disabled = false;
+                    btnRun.textContent = '▶ Calistir';
+                    break;
+                case 'run-stdout':
+                    appendOutput(msg.stdout,'success');
+                    break;
+                case 'run-stderr':
+                    appendOutput(msg.stderr,'error');
+                    break;
+                case 'run-exit':
+                    if(msg.exitCode===0) status.textContent = 'tamam ✓';
+                    else status.textContent = 'cikis '+msg.exitCode;
+                    btnRun.disabled = false;
+                    btnRun.textContent = '▶ Calistir';
+                    break;
+                case 'run-cancel':
+                    appendOutput('[iptal edildi]\n','warn');
+                    btnRun.disabled = false;
+                    btnRun.textContent = '▶ Calistir';
+                    break;
+            }
+        };
+        worker.onerror = function(e){
+            workerReady = false;
+            status.textContent = 'worker hatasi';
+            btnRun.disabled = false;
+            btnRun.textContent = '▶ Calistir';
+        };
+        status.textContent = 'yukleniyor...';
+        btnRun.disabled = true;
+    }catch(e){
+        status.textContent = 'wasm yok';
+        btnRun.disabled = false;
+    }
 }
 
-async function runCode(){
-    const code=editor.value;if(!code.trim())return;
-    btnRun.disabled=true;btnRun.textContent='⏳';status.textContent='derleniyor...';output.innerHTML='';
+function runCode(){
+    const code = editor.value;
+    if(!code.trim()) return;
 
-    if(!serverAvailable){
-        appendOutput('ℹ️  Bu statik sunucuda (GitHub Pages) derleme yapilamaz.\n\n','warn');
-        appendOutput('MELP kodunuzu yerel olarak derlemek icin:\n','');
-        appendOutput('  1. Projeyi klonlayin:  git clone https://github.com/MELP-Lang/MELP\n','');
-        appendOutput('  2. STAGE9/demos/  altinda calisan ornekleri inceleyin\n','');
-        appendOutput('  3. node server.js  ile yerel playground baslatin\n','');
-        appendOutput('  4. Veya VS Code MELP uzantisini yukleyin\n\n','');
-        appendOutput('Bu sayfa MELP sozdizimini kesfetmek icin bir editordur.\n','success');
-        appendOutput('Kodu duzenleyip ornekleri inceleyebilirsiniz. ✓\n','success');
-        btnRun.disabled=false;btnRun.textContent='▶ Calistir';
-        status.textContent='statik mod';
+    if(!workerReady){
+        appendOutput('⚠️  WASM derleyici henuz hazir degil. Lutfen bekleyin...\n','warn');
         return;
     }
 
-    try{
-        const resp=await fetch('/api/compile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
-        const result=await resp.json();
-        if(result.error){appendOutput(result.error+'\n','error');status.textContent='hata ✗'}
-        else{if(result.output)appendOutput(result.output,'success');status.textContent='tamam ✓'}
-    }catch(e){appendOutput('Baglanti hatasi: '+e.message+'\n','error');status.textContent='baglanti ✗'}
-    btnRun.disabled=false;btnRun.textContent='▶ Calistir';
+    btnRun.disabled = true;
+    btnRun.textContent = '⏳';
+    output.innerHTML = '';
+    worker.postMessage({ type: 'compile', code: code, run: true });
 }
 
 initExamples();
-checkServer();
-lineCount.textContent=editor.value.split('\n').length+' satir';
+initWorker();
+lineCount.textContent = editor.value.split('\n').length+' satir';
 </script>
 </body>
 </html>
