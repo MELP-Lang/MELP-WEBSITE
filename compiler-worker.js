@@ -81,7 +81,6 @@ async function execWasm(wasmBytes) {
       fd_read()              { return 0; },
       fd_prestat_get()       { return 8; },
       fd_prestat_dir_name()  { return 8; },
-      fd_fdstat_get()        { return 0; },
       fd_fdstat_set_flags()  { return 0; },
       fd_fdstat_set_rights() { return 0; },
       fd_filestat_get()      { return 0; },
