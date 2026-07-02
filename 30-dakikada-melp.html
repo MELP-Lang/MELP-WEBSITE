@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>30 Dakikada MELP</title>
+<link rel="shortcut icon" type="image/x-icon" href="/assets/MELP_logo_1.ico">
+<link rel="icon" type="image/png" href="/assets/MELP_logo.png">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+h2 { color: var(--fg); margin-top: 30px; }
+code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: var(--hl); }
+pre { background: var(--surface); padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); }
+pre code { color: #7ee787; background: none; padding: 0; }
+.step { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 20px 0; }
+.step-num { color: var(--accent); font-weight: bold; font-size: 1.2em; }
+.output { background: var(--bg); border-left: 3px solid #3fb950; padding: 10px 15px; margin: 10px 0; color: #7ee787; }
+.note { background: var(--surface); border-left: 3px solid var(--warn, #d29922); padding: 10px 15px; margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="index.html" class="nav-logo">
+      <img src="assets/MELP_logo.svg" alt="MELP Logo" width="32" height="32">
+      MELP <span style="font-size:0.7em; font-weight:400; opacity:0.6;">v1.0-steel-core</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Ana Sayfa</a></li>
+      <li><a href="ozellikler.html">Özellikler</a></li>
+      <li><a href="neden-melp.html">Neden MELP?</a></li>
+      <li><a href="30-dakikada-melp.html" class="active">30 Dakikada</a></li>
+      <li><a href="kurulum.html">Kurulum</a></li>
+      <li><a href="docs.html">Dokümanlar</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+
+<h1>🚀 30 Dakikada MELP</h1>
+<p>Bu rehberde MELP programlama dilini sıfırdan öğrenecek, 7 adımda çalışan programlar yazacaksınız.</p>
+
+<div class="step">
+<div class="step-num">Adım 0: Kurulum (2 dk)</div>
+<p>MELP binary'sini indirin ve PATH'e ekleyin:</p>
+<pre><code># Linux x86-64
+wget https://github.com/MELP-Lang/MELP/releases/latest/download/melp-linux-x64.tar.gz
+tar xzf melp-linux-x64.tar.gz
+export PATH="$PWD/melp/bin:$PATH"
+export MELP_PATH="$PWD/melp"
+
+# Test
+melp_compiler --version</code></pre>
+<p>Bağımlılıklar: <code>clang-22</code>, <code>libgmp-dev</code></p>
+</div>
+
+<div class="step">
+<div class="step-num">Adım 1: Merhaba Dünya (3 dk)</div>
+<p>İlk MELP programınız:</p>
+<pre><code>-- hello.mlp
+numeric function main()
+    println("Merhaba MELP!")
+    return 0
+end function</code></pre>
+<p>Derleme ve çalıştırma:</p>
+<pre><code>cp hello.mlp /tmp/.melp_compile_src
+melp_compiler > hello.ll
+clang-22 -O2 build/shim.o hello.ll -o hello -lm -lgmp
+./hello</code></pre>
+<div class="output">Merhaba MELP!</div>
+</div>
+
+<div class="step">
+<div class="step-num">Adım 2: Değişkenler ve Döngüler (5 dk)</div>
+<pre><code>numeric function main()
+    numeric yas = 25
+    string isim = "Ali"
+    println(isim & " " & str(yas) & " yasinda")
+
+    -- 1'den 5'e say
+    numeric i = 1
+    loop i <= 5
+        println(str(i))
+        i = i + 1
+    end loop
+
+    -- Faktöriyel
+    println("5! = " & str(faktoriyel(5)))
+    return 0
+end function
+
+numeric function faktoriyel(numeric n)
+    if n <= 1 then return 1 end if
+    return n * faktoriyel(n - 1)
+end function</code></pre>
+<div class="output">Ali 25 yasinda<br>1<br>2<br>3<br>4<br>5<br>5! = 120</div>
+</div>
+
+<div class="step">
+<div class="step-num">Adım 3: Dosya Okuma (5 dk)</div>
+<pre><code>numeric function main()
+    string icerik = mlp_fs_read_to_string("/etc/hostname")
+    println("Hostname: " & icerik)
+    return 0
+end function</code></pre>
+<div class="output">Hostname: pardus-81y4</div>
+<div class="note">💡 <code>mlp_fs_read_to_string</code> dosyayı okur, <code>mlp_fs_write</code> yazar.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Adım 4: HTTP İsteği (5 dk)</div>
+<pre><code>numeric function main()
+    -- curl ile HTTP GET
+    string yanit = shell_exec("curl -s https://api.github.com/zen")
+    println("GitHub Zen: " & yanit)
+    return 0
+end function</code></pre>
+<div class="output">GitHub Zen: Avoid administrative distraction.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Adım 5: Struct + Enum (5 dk)</div>
+<pre><code>struct Point
+    numeric x
+    numeric y
+end struct
+
+enum Color
+    Red
+    Green
+    Blue
+end enum
+
+numeric function main()
+    Point p = Point(3; 4)
+    println("Point: (" & str(p.x) & ", " & str(p.y) & ")")
+
+    Color c = Color.Blue
+    println("Color enum: " & str(c))
+    return 0
+end function</code></pre>
+<div class="output">Point: (3, 4)<br>Color enum: 2</div>
+</div>
+
+<div class="step">
+<div class="step-num">Adım 6: Web Sayfası (5 dk)</div>
+<pre><code>numeric function main()
+    string html = "&lt;h1&gt;MELP Web&lt;/h1&gt;&lt;p&gt;Merhaba dunya!&lt;/p&gt;"
+    string yanit = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" & html
+    string cmd = "echo '" & yanit & "' | nc -l -p 8888 -q 1 & sleep 1 && echo 'http://localhost:8888'"
+    numeric rc = shell_exec(cmd)
+    return 0
+end function</code></pre>
+<div class="output">http://localhost:8888</div>
+</div>
+
+<h2>Sonraki Adımlar</h2>
+<ul>
+<li>📖 <a href="#">Showcase: Tüm özellikler</a> — 10 demo dosyası</li>
+<li>📋 <a href="#">MELP Dil Spesifikasyonu</a> — Tam referans</li>
+<li>🔧 <a href="#">IDE Eklentileri</a> — VS Code, Electron</li>
+<li>💬 <a href="#">Topluluk</a> — GitHub Discussions, Discord</li>
+</ul>
+
+<p style="text-align:center;color:#8b949e;margin-top:40px;">MELP — Sade. Scope-bazlı. Hızlı. 🚀</p>
+
+</main>
+</body>
+</html>

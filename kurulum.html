@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="MELP kurulum rehberi — Web IDE, VS Code uzantısı veya CLI ile başlayın.">
   <title>Kurulum — MELP</title>
-  <link rel="shortcut icon" type="image/x-icon" href="/assets/melp-logo.ico">
-  <link rel="icon" type="image/png" href="/assets/melp-logo.png">
+  <link rel="shortcut icon" type="image/x-icon" href="/assets/MELP_logo_1.ico">
+  <link rel="icon" type="image/png" href="/assets/MELP_logo.png">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
   <header>
     <nav>
       <a href="index.html" class="nav-logo">
-        <img src="assets/melp-logo.svg" alt="MELP Logo" width="32" height="32">
+        <img src="assets/MELP_logo.svg" alt="MELP Logo" width="32" height="32">
         MELP <span style="font-size:0.7em; font-weight:400; opacity:0.6;">(alfa)</span>
       </a>
       <ul class="nav-links" id="navLinks">
@@ -24,7 +24,7 @@
         <li><a href="kurulum.html" class="active">Kurulum</a></li>
         <li><a href="docs.html">Dokümanlar</a></li>
         <li><a href="inventory.html">Envanter</a></li>
-        <li><a href="./web-ide/" target="_blank" rel="noopener" class="btn-nav">Hemen Dene →</a></li>
+        <li><a href="https://melp-lang.github.io/melp-ide-web/" target="_blank" rel="noopener" class="btn-nav">Hemen Dene →</a></li>
       </ul>
       <div class="theme-toggle">
         <button class="theme-btn" data-theme="dark" title="Koyu tema" aria-label="Koyu tema">🌙</button>
@@ -48,9 +48,9 @@
       <div class="tabs">
         <div class="tab-nav">
           <button class="tab-btn active" data-tab="webide">🌐 Web IDE (Kurulmsuz)</button>
+          <button class="tab-btn" data-tab="electron">🖥️ Electron IDE</button>
           <button class="tab-btn" data-tab="vscode">🧩 VS Code Uzantısı</button>
-          <button class="tab-btn" data-tab="electron" disabled style="opacity:0.5;cursor:not-allowed;">🖥️ Electron IDE <span style="font-size:0.75rem;font-weight:600;color:#a78bfa;">(Yakında)</span></button>
-          <button class="tab-btn" data-tab="cli" disabled style="opacity:0.5;cursor:not-allowed;">💻 CLI (Yerel) <span style="font-size:0.75rem;font-weight:600;color:#a78bfa;">(Yakında)</span></button>
+          <button class="tab-btn" data-tab="cli">💻 CLI (Yerel)</button>
         </div>
 
         <!-- TAB 1: WEB IDE -->
@@ -65,13 +65,13 @@
               Web IDE, tam özellikli MELP derleyicisini tarayıcınızda çalıştırır.<br>
               Syntax highlighting, hata mesajları ve anlık derleme desteği bulunur.
             </p>
-            <a href="./web-ide/"
+            <a href="https://melp-lang.github.io/melp-ide-web/"
                target="_blank" rel="noopener"
                class="btn btn-primary" style="font-size:1.15rem;padding:0.9rem 2.5rem;">
               Web IDE'yi Aç →
             </a>
             <p style="margin-top:1.25rem;color:var(--text-muted);font-size:0.9rem;">
-              <code class="inline">melp.dev/web-ide/</code>
+              <code class="inline">melp-lang.github.io/melp-ide-web/</code>
             </p>
           </div>
 
@@ -96,13 +96,59 @@
 
         <!-- TAB 2: ELECTRON IDE -->
         <div class="tab-pane" id="tab-electron">
-          <div style="text-align:center;padding:4rem 2rem;">
-            <div style="font-size:3rem;margin-bottom:1rem;">🖥️</div>
-            <h2 style="font-size:1.8rem;margin-bottom:1rem;">Electron IDE</h2>
-            <p style="color:var(--text-muted);font-size:1.1rem;max-width:480px;margin:0 auto 2rem;">
-              Masaüstü GUI tasarımcısı — sürükle-bırak form editörü, otomatik MELP kodu üretimi. Yakında yayında.
+          <div class="section-header" style="text-align:left;margin-bottom:2rem;">
+            <h2 style="font-size:1.6rem;">Electron IDE — Masaüstü GUI Tasarımcısı</h2>
+            <p>Sürükle-bırak, görsel form tasarımı ve otomatik MELP kodu üretimi.</p>
+          </div>
+
+          <div class="cards-grid" style="margin-bottom:2rem;">
+            <div class="card">
+              <div class="card-icon">🎨</div>
+              <h3>Görsel Form Tasarımı</h3>
+              <p>Widget'ları sürükleyip bırakarak GUI oluşturun — Visual Studio tarzı arayüz.</p>
+            </div>
+            <div class="card">
+              <div class="card-icon">⚙️</div>
+              <h3>Otomatik Kod Üretimi</h3>
+              <p>Tasarladığınız formdan MELP kodu otomatik oluşturulur.</p>
+            </div>
+            <div class="card">
+              <div class="card-icon">🌙</div>
+              <h3>Koyu Tema</h3>
+              <p>Göz yormayan profesyonel dark theme ile tam gün çalışın.</p>
+            </div>
+          </div>
+
+          <div class="install-step">
+            <div class="step-num">1</div>
+            <div class="install-step-content">
+              <h3>Depoyu Klonlayın</h3>
+              <pre><code>git clone https://github.com/MELP-Lang/MELP.git
+cd MELP/editors/ELECTRON</code></pre>
+            </div>
+          </div>
+
+          <div class="install-step">
+            <div class="step-num">2</div>
+            <div class="install-step-content">
+              <h3>Bağımlılıkları Yükleyin</h3>
+              <pre><code>npm install</code></pre>
+            </div>
+          </div>
+
+          <div class="install-step">
+            <div class="step-num">3</div>
+            <div class="install-step-content">
+              <h3>Çalıştırın</h3>
+              <pre><code>npm start</code></pre>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <p>
+              <strong>Versiyon:</strong> 1.2.4 &nbsp;·&nbsp;
+              <strong>Platform:</strong> Linux x86_64 (macOS ve Windows desteği beta sürümünden sonra planlanmıştır.)
             </p>
-            <span class="badge badge-yellow" style="font-size:1rem;padding:0.4rem 1.2rem;">Yakında</span>
           </div>
         </div>
 
@@ -153,17 +199,78 @@ end function</code></pre>
             </div>
           </div>
 
-        
+          <div class="info-box">
+            <p>
+              <strong>Not:</strong> VS Code uzantısı sözdizim renklendirme ve temel dil
+              desteği sağlar. Derleme için CLI kurulumu önerilir (üçüncü sekme).
+            </p>
+          </div>
+        </div>
 
         <!-- TAB 3: CLI -->
         <div class="tab-pane" id="tab-cli">
-          <div style="text-align:center;padding:4rem 2rem;">
-            <div style="font-size:3rem;margin-bottom:1rem;">💻</div>
-            <h2 style="font-size:1.8rem;margin-bottom:1rem;">CLI — Yerel Kurulum</h2>
-            <p style="color:var(--text-muted);font-size:1.1rem;max-width:480px;margin:0 auto 2rem;">
-              Derleyiciyi doğrudan makinenizde çalıştırın. Kurulum kılavuzu hazırlanıyor.
+          <div class="section-header" style="text-align:left;margin-bottom:2rem;">
+            <h2 style="font-size:1.6rem;">CLI — Yerel Kurulum</h2>
+            <p>
+              Derleyiciyi doğrudan makinenizde çalıştırın.
+              <span class="badge badge-yellow" style="font-size:0.78rem;">Linux x86_64 — Alfa</span>
             </p>
-            <span class="badge badge-yellow" style="font-size:1rem;padding:0.4rem 1.2rem;">Yakında</span>
+          </div>
+
+          <div class="install-step">
+            <div class="step-num">1</div>
+            <div class="install-step-content">
+              <h3>Depoyu Klonlayın</h3>
+              <pre><code>git clone https://github.com/MELP-Lang/MELP.git
+cd MELP/LLVM/STAGE1</code></pre>
+            </div>
+          </div>
+
+          <div class="install-step">
+            <div class="step-num">2</div>
+            <div class="install-step-content">
+              <h3>Derleyiciyi Derleyin</h3>
+              <p>LLVM 14 ve C++17 destekleyen bir derleyici gereklidir:</p>
+              <pre><code><span class="cm"># Bağımlılıklar (Debian/Ubuntu)</span>
+sudo apt install llvm-14 clang-14 build-essential
+
+<span class="cm"># Derleme</span>
+make</code></pre>
+            </div>
+          </div>
+
+          <div class="install-step">
+            <div class="step-num">3</div>
+            <div class="install-step-content">
+              <h3>İlk Programı Çalıştırın</h3>
+              <pre><code><span class="cm"># Örnek dosyayı çalıştır</span>
+bin/run_melp ornek.mlp
+
+<span class="cm"># Native binary üret</span>
+bin/melp_compiler ornek.mlp -o merhaba
+./merhaba</code></pre>
+            </div>
+          </div>
+
+          <div class="install-step">
+            <div class="step-num">4</div>
+            <div class="install-step-content">
+              <h3>Türkçe ile Yazın</h3>
+              <p>Bir <code class="inline">.mlp</code> dosyası oluşturun:</p>
+              <pre><code><span class="cm">-- merhaba.mlp</span>
+<span class="kw">fonksiyon</span> <span class="fn">giriş</span>()
+    <span class="fn">yaz</span>(<span class="str">"Merhaba Dünya!"</span>)
+<span class="kw">fonksiyon sonu</span></code></pre>
+              <pre><code>bin/run_melp merhaba.mlp
+<span class="cm"># Çıktı: Merhaba Dünya!</span></code></pre>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <p>
+              <strong>Sistem Gereksinimleri:</strong> Linux x86_64, LLVM 14, GCC/Clang C++17.
+              macOS ve Windows desteği beta sürümünden sonra planlanmıştır.
+            </p>
           </div>
         </div>
       </div>
@@ -186,8 +293,7 @@ end function</code></pre>
     <p>© 2026 MELP. MIT Lisansı.</p>
     <p style="margin-top:0.5rem;">
       <a href="https://github.com/MELP-Lang/MELP" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://x.com/Acar_Kodlama" target="_blank" rel="noopener">X</a>
-      <a href="mailto:info@melp.dev">info@melp.dev</a>
+      <a href="https://melp.dev">melp.dev</a>
     </p>
   </footer>
 

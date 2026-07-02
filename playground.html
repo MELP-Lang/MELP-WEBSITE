@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>MELP Playground</title>
+<title>MELP Playground v2 — Monaco</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#1e1e2e;color:#cdd6f4;height:100vh;display:flex;flex-direction:column}
@@ -23,7 +23,7 @@ main{display:flex;flex:1;overflow:hidden;flex-direction:row}
 .editor-panel{flex:1;display:flex;flex-direction:column;border-right:1px solid #313244;min-height:200px}
 @media(max-width:700px){.editor-panel{border-right:none;border-bottom:1px solid #313244}}
 .editor-panel label{font-size:11px;color:#a6adc8;padding:6px 12px;background:#181825;display:flex;justify-content:space-between}
-#editor{flex:1;background:#1e1e2e;color:#cdd6f4;border:none;padding:12px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;line-height:1.5;resize:none;outline:none;tab-size:4}
+#editor-container{flex:1;min-height:300px}
 .output-panel{flex:1;display:flex;flex-direction:column;min-height:150px}
 .output-panel label{font-size:11px;color:#a6adc8;padding:6px 12px;background:#181825;display:flex;justify-content:space-between}
 #output{flex:1;background:#11111b;color:#cdd6f4;padding:12px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:12px;line-height:1.4;overflow:auto;white-space:pre-wrap;word-break:break-all}
@@ -43,35 +43,51 @@ footer a{color:#cba6f7;text-decoration:none}
         </select>
         <button class="btn btn-clear" onclick="clearOutput()">Temizle</button>
         <button class="btn btn-run" id="btnRun" onclick="runCode()">▶ Calistir</button>
+        <button class="btn" id="run-ui-btn" onclick="runUI()" title="MELP UI → HTML preview" style="background:#1a936f;color:#fff;margin-left:4px;">🖼️ Run UI</button>
+        <button class="btn" onclick="loadUIDemo()" style="background:#4a4a6a;color:#e0e0e0;font-size:11px;margin-left:2px;">📋 Load Demo</button>
     </div>
 </header>
 <main>
     <div class="editor-panel">
         <label>📝 MELP Kodu <span id="lineCount"></span></label>
-        <textarea id="editor" spellcheck="false">function main()
-    println("Merhaba MELP!")
-end function</textarea>
+        <div id="editor-container"></div>
     </div>
     <div class="output-panel">
         <label>📤 Cikti <span id="status"></span></label>
         <div id="output"></div>
     </div>
 </main>
-<footer>Ctrl+Enter = Calistir · <a href="https://github.com/MELP-Lang/MELP" target="_blank">GitHub</a> · STAGE10 · WASM ✨</footer>
+<div id="ui-preview-container" style="display:none;border-top:1px solid #313244;height:420px;background:#1a1a2e;overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#2a2a3e;">
+        <span style="color:#cba6f7;font-size:12px;">🖼️ UI Preview</span>
+        <button onclick="closeUIPreview()" style="background:transparent;color:#e0e0e0;border:none;cursor:pointer;font-size:16px;">×</button>
+    </div>
+    <div style="display:flex;flex:1;height:calc(100% - 30px);">
+        <div id="ui-canvas" style="position:relative;flex:1;background:#16213e;overflow:hidden;"></div>
+        <div id="ui-log" style="width:200px;background:#0a0a1a;color:#a0a0c0;font-size:9px;padding:4px;overflow-y:auto;white-space:pre-wrap;font-family:monospace;border-left:1px solid #313244;"></div>
+    </div>
+</div>
+<footer>Ctrl+Enter = Calistir · <a href="https://github.com/MELP-Lang/MELP" target="_blank">GitHub</a> · STAGE11 · Monaco ✨</footer>
 
+<!-- Monaco CDN (MIT lisanslı) -->
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+<!-- WASI polyfill (FAZ C UI preview) -->
+<script src="wasi_polyfill.js"></script>
 <script>
-const editor=document.getElementById('editor');
+// ── Globals ──
 const output=document.getElementById('output');
 const btnRun=document.getElementById('btnRun');
 const status=document.getElementById('status');
 const exampleSelect=document.getElementById('exampleSelect');
 const lineCount=document.getElementById('lineCount');
 
-// WASM Worker — tarayici ici derleme
+let melpEditor = null;
 let worker = null;
 let workerReady = false;
 
-// Embedded examples
+const defaultCode = 'function main()\n    println("Merhaba MELP!")\nend function\n';
+
+// ── Examples ──
 const examples = [
     {title:"01 — Merhaba Dunya", code:"-- Ornek 1: Merhaba Dunya\nfunction main()\n    println(\"Merhaba MELP!\")\nend function\n"},
     {title:"02 — Degiskenler ve Aritmetik", code:"-- Ornek 2: Degiskenler ve Aritmetik\nfunction main()\n    numeric a = 10\n    numeric b = 20\n    numeric c = a + b\n    println(str(c))\nend function\n"},
@@ -92,18 +108,14 @@ function initExamples(){
     });
 }
 
-editor.addEventListener('keydown',function(e){
-    if(e.key==='Tab'){e.preventDefault();const s=this.selectionStart;const en=this.selectionEnd;this.value=this.value.substring(0,s)+'    '+this.value.substring(en);this.selectionStart=this.selectionEnd=s+4}
-    if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();runCode()}
-});
-editor.addEventListener('input',()=>{lineCount.textContent=editor.value.split('\n').length+' satir'});
-
 function loadExample(){
     const i=exampleSelect.value;if(i==='')return;
-    editor.value=examples[i].code;lineCount.textContent=editor.value.split('\n').length+' satir';clearOutput();
+    if(melpEditor) melpEditor.setValue(examples[i].code);
+    clearOutput(); updateLineCount();
 }
 function clearOutput(){output.innerHTML='';status.textContent=''}
 function appendOutput(text,cls){const s=document.createElement('span');s.className=cls||'';s.textContent=text;output.appendChild(s);output.scrollTop=output.scrollHeight}
+function updateLineCount(){if(melpEditor)lineCount.textContent=melpEditor.getModel().getLineCount()+' satir'}
 
 // ── WASM Worker ──
 function initWorker(){
@@ -170,9 +182,8 @@ function initWorker(){
     }
 }
 
-// ── MLP → pmlp normalizer (WASM derleyici pmlp bekler) ──
+// ── MLP → pmlp normalizer ──
 function normalizeMlp(code){
-    // Block terminators: "end X" → "end_X"
     code = code.replace(/end function/gi, 'end_function');
     code = code.replace(/end if/gi, 'end_if');
     code = code.replace(/end loop/gi, 'end_loop');
@@ -181,9 +192,7 @@ function normalizeMlp(code){
     code = code.replace(/end outer/gi, 'end_outer');
     code = code.replace(/end for/gi, 'end_for');
     code = code.replace(/end while/gi, 'end_while');
-    // Else if → else_if
     code = code.replace(/else if/gi, 'else_if');
-    // Add #lang directive if missing
     if(!code.match(/^#lang /m)){
         code = '#lang english\n#syntax mlp\n' + code;
     }
@@ -191,7 +200,8 @@ function normalizeMlp(code){
 }
 
 function runCode(){
-    const code = normalizeMlp(editor.value);
+    if(!melpEditor) return;
+    const code = normalizeMlp(melpEditor.getValue());
     if(!code.trim()) return;
 
     if(!workerReady){
@@ -205,9 +215,145 @@ function runCode(){
     worker.postMessage({ type: 'compile', code: code, run: true });
 }
 
-initExamples();
-initWorker();
-lineCount.textContent = editor.value.split('\n').length+' satir';
+// ── Monaco Editor init ──
+require.config({
+    paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' }
+});
+
+require(['vs/editor/editor.main'], function() {
+    // Register MELP language
+    monaco.languages.register({ id: 'melp' });
+
+    // MELP Monarch tokenizer
+    monaco.languages.setMonarchTokensProvider('melp', {
+        keywords: [
+            'function','end','if','then','else','loop','for','while',
+            'return','struct','enum','match','case','import','external',
+            'forward','scope','save','outer','exit',
+            'loop_each','as','in','to','else_if','end_function','end_if',
+            'end_loop','end_struct','end_match','end_for','end_while',
+            'numeric','string','boolean','void','list','map'
+        ],
+        operators: ['+','-','*','/','=','<','>','!','&','|','==','!=','<=','>='],
+        symbols: /[=><!~?:&|+\-*\/\^%]+/,
+        tokenizer: {
+            root: [
+                [/--.*$/, 'comment'],
+                [/\".*?\"/, 'string'],
+                [/\b\d+\.?\d*\b/, 'number'],
+                [/\b(function|end|if|then|else|loop|for|while|return|struct|enum|match|case|import|external|forward|scope|save|outer|exit|loop_each|as|in|to|else_if|end_function|end_if|end_loop|end_struct|end_match|end_for|end_while)\b/, 'keyword'],
+                [/\b(numeric|string|boolean|void|list|map)\b/, 'type'],
+                [/[a-zA-Z_]\w*/, 'identifier'],
+            ]
+        }
+    });
+
+    // Create editor
+    melpEditor = monaco.editor.create(document.getElementById('editor-container'), {
+        value: defaultCode,
+        language: 'melp',
+        theme: 'vs-dark',
+        fontSize: 13,
+        fontFamily: "'JetBrains Mono','Fira Code',monospace",
+        minimap: { enabled: false },
+        automaticLayout: true,
+        tabSize: 4,
+        insertSpaces: false,
+        lineNumbers: 'on',
+        scrollBeyondLastLine: false,
+        wordWrap: 'on'
+    });
+
+    // Ctrl+Enter to run
+    melpEditor.addAction({
+        id: 'run-melp',
+        label: 'Run MELP',
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
+        run: function() { runCode(); }
+    });
+
+    // Update line count on change
+    melpEditor.onDidChangeModelContent(function() {
+        updateLineCount();
+    });
+
+    updateLineCount();
+    initExamples();
+    initWorker();
+
+    // Focus editor on load
+    melpEditor.focus();
+});
+
+// ── UI Mode (FAZ C) ────────────────────────────────────────────
+const UI_BUILD_URL = '/api/build-ui';
+let uiWidgetMap = null;
+
+function closeUIPreview() {
+    document.getElementById('ui-preview-container').style.display = 'none';
+    uiWidgetMap = null;
+}
+
+function uiLog(msg) {
+    const log = document.getElementById('ui-log');
+    if (log) { log.textContent += msg + '\n'; log.scrollTop = log.scrollHeight; }
+}
+
+function getEditorContent() {
+    return melpEditor ? melpEditor.getValue() : '';
+}
+
+async function runUI() {
+    const code = getEditorContent();
+    if (!code.trim()) { alert('Once MELP UI kodu yazin'); return; }
+    const container = document.getElementById('ui-preview-container');
+    const canvas = document.getElementById('ui-canvas');
+    const logEl = document.getElementById('ui-log');
+    container.style.display = 'block';
+    canvas.innerHTML = '';
+    logEl.textContent = '';
+    uiLog('⏳ Building...');
+    try {
+        const resp = await fetch(UI_BUILD_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: code });
+        if (!resp.ok) { uiLog('❌ Build error: ' + await resp.text()); return; }
+        const wasmBytes = await resp.arrayBuffer();
+        uiLog('✅ Build OK (' + wasmBytes.byteLength + ' bytes)');
+        const poly = WasiPolyfill.setup();
+        const { instance } = await WebAssembly.instantiate(wasmBytes, { wasi_snapshot_preview1: poly.wasiImport.wasi_snapshot_preview1 });
+        poly.setInstance(instance);
+        try { instance.exports._start(); } catch(e) { if (!e || typeof e.exitCode === 'undefined') throw e; uiLog('exit: ' + e.exitCode); }
+        const output = poly.getOutput();
+        uiLog('Output: ' + output.length + ' chars');
+        const widgetMap = new Map();
+        for (const line of output.split('\n')) {
+            const t = line.trim();
+            if (t === 'LAYOUT_DONE') { uiLog('✅ LAYOUT_DONE'); continue; }
+            if (!t.startsWith('WIDGET:')) { if (t) uiLog('[stdout] ' + t); continue; }
+            const parts = t.substring(7).split(':');
+            if (parts.length < 6) continue;
+            const w = { id: parts[0], type: parts[1], x: +parts[2], y: +parts[3], w: +parts[4], h: +parts[5], label: (parts[6]||'').replace(/_/g,' '), bg: parts[7]||'#ccc', text: parts[8]||'#000', fs: +(parts[9]||12) };
+            let el = widgetMap.get(w.id);
+            if (!el) {
+                el = document.createElement('div');
+                el.style.cssText = 'position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:monospace;';
+                canvas.appendChild(el);
+                widgetMap.set(w.id, el);
+            }
+            el.style.left = w.x+'px'; el.style.top = w.y+'px'; el.style.width = w.w+'px'; el.style.height = w.h+'px';
+            el.style.backgroundColor = w.bg; el.style.color = w.text; el.style.fontSize = w.fs+'px';
+            el.textContent = w.label; el.title = w.id + ' (' + w.type + ')';
+            if (w.type === 'button') { el.style.borderRadius = '3px'; el.style.cursor = 'pointer'; el.style.border = '1px solid rgba(255,255,255,0.2)'; }
+        }
+        uiLog('Rendered: ' + widgetMap.size + ' widgets');
+        uiWidgetMap = widgetMap;
+    } catch(e) { uiLog('❌ ' + (e.message || e)); }
+}
+
+function loadUIDemo() {
+    const demoCode = 'import "lib/ui/layout.mlp"\n\nfunction main()\n    numeric win_w = 600\n    numeric win_h = 400\n    println("WIDGET:btn0:button:10:10:180:32:Tikla:#3498db:#ffffff:14")\n    println("WIDGET:lbl0:label:200:10:180:20:Hello_MELP:#1a1a2e:#cba6f7:14")\n    println("WIDGET:inp0:input:10:50:370:28:Adinizi_yazin:#ffffff:#222:14")\n    println("WIDGET:btn_submit:button:10:90:120:28:Gonder:#1a936f:#ffffff:13")\n    println("LAYOUT_DONE")\nend function\n';
+    if (melpEditor) melpEditor.setValue(demoCode);
+    updateLineCount();
+}
 </script>
 </body>
 </html>

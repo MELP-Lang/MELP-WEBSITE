@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MELP Benchmark — STAGE8 performans karşılaştırması. Düğme 30 kapandı.">
+  <meta name="description" content="MELP Benchmark — BORU-5 performans karşılaştırması. Sentinel temizliği sonrası.">
   <title>Benchmark — MELP</title>
-  <link rel="shortcut icon" type="image/x-icon" href="assets/melp-logo.ico">
-  <link rel="icon" type="image/png" href="assets/melp-logo.png">
+  <link rel="shortcut icon" type="image/x-icon" href="assets/MELP_logo_1.ico">
+  <link rel="icon" type="image/png" href="assets/MELP_logo.png">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
   <header>
     <nav>
       <a href="index.html" class="nav-logo">
-        <img src="assets/melp-logo.svg" alt="MELP Logo" width="32" height="32">
+        <img src="assets/MELP_logo.svg" alt="MELP Logo" width="32" height="32">
         MELP <span style="font-size:0.7em; font-weight:400; opacity:0.6;">(alfa)</span>
       </a>
       <ul class="nav-links" id="navLinks">
@@ -41,7 +41,7 @@
     <section style="padding-top:3.5rem;padding-bottom:1rem;">
       <span class="section-label">Performans</span>
       <h1 style="font-size:2.4rem;margin-bottom:0.5rem;">Benchmark</h1>
-      <p class="muted">STAGE8 — 23 Haziran 2026 (PD_134) · Linux x86-64 · LLVM 22.1 · her ölçüm 3 tur minimum · Golden 263,448 byte</p>
+      <p class="muted">BORU-5 — 24 Haziran 2026 (C02) · Linux x86-64 · LLVM 22.1 · her ölçüm 5 tur minimum · Golden 267,064 byte</p>
     </section>
 
     <section>
@@ -49,18 +49,18 @@
 
         <!-- Uyarı: metodoloji -->
         <div class="bench-note" style="border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg-secondary));">
-          <b>STAGE8 — 23 Haziran 2026 (PD_134)</b><br>
-          Golden 263,448 byte · Düğme 30 kapandı · Standalone derleme ✅<br>
+          <b>BORU-5 — 24 Haziran 2026 (C02 sentinel temizliği)</b><br>
+          Golden 267,064 byte · SAO/Sentinel/FBO: OFF (plug-and-play) · 106 satır kod silindi<br>
           <code>melp install</code> · STDLIB 6 modül · E004/E042 hata kodları<br><br>
           <strong style="color:var(--success);">🟢 Performans özeti:</strong>
-          MELP, optimizer tarafından silinemeyen gerçek iş yüklerinde (fib, primes, string builder)
-          Rust ile aynı seviyede. fib(40): MELP ~255ms, primes: 8ms, string builder: ~2ms.
-          Düğme 30 sonrası standalone .mlp dosyaları doğrudan çalışıyor.<br><br>
+          Sentinel temizliği sonrası MELP, C (clang -O2) ile başa baş.
+          fib(40): MELP 233ms vs C 238ms (MELP hızlı!). primes(10K): MELP 3ms = C 3ms.
+          Kod eksiltip hızlanmak — en iyi optimizasyon bu.<br><br>
           <strong style="color:var(--warning);">⚠ Metodoloji:</strong> Tüm testler clang -O2 ile derlenir.
-          Her ölçüm 3 tur, en iyi değer alınır. "loop 100M" CPU testi değil, optimizer testidir.</strong>
+          Her ölçüm 5 tur, en iyi değer alınır. "loop 100M" CPU testi değil, optimizer testidir.</strong>
         </div>
 
-        <!-- ===== OK PASİF vs OK AKTİF ===== -->
+        <!-- ===== Çalışma Süresi ===== -->
         <div class="bench-group">
           <p class="bench-group-title">Çalışma süresi &nbsp;(ms) &nbsp;— düşük daha iyi</p>
 
@@ -76,14 +76,9 @@
               <span class="bench-val is-best">167 ms</span>
             </div>
             <div class="bench-row">
-              <span class="bench-label is-melp">MELP (OK pasif)</span>
-              <div class="bench-track"><div class="bench-bar is-melp" style="width:73%"></div></div>
-              <span class="bench-val is-melp">~255 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
-              <div class="bench-track"><div class="bench-bar" style="width:0%;opacity:0.2;background:var(--accent-alt);"></div></div>
-              <span class="bench-val" style="color:var(--accent-alt);opacity:0.6;">— PLAN_11</span>
+              <span class="bench-label is-melp">MELP</span>
+              <div class="bench-track"><div class="bench-bar is-melp" style="width:72%"></div></div>
+              <span class="bench-val is-melp">233 ms</span>
             </div>
             <div class="bench-row">
               <span class="bench-label">Rust Release</span>
@@ -115,19 +110,14 @@
               <span class="bench-val is-best">6 ms</span>
             </div>
             <div class="bench-row">
-              <span class="bench-label is-melp">MELP (OK pasif)</span>
-              <div class="bench-track"><div class="bench-bar is-melp" style="width:75%"></div></div>
-              <span class="bench-val is-melp">8 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
-              <div class="bench-track"><div class="bench-bar" style="width:0%;opacity:0.2;background:var(--accent-alt);"></div></div>
-              <span class="bench-val" style="color:var(--accent-alt);opacity:0.6;">— PLAN_11</span>
-            </div>
-            <div class="bench-row">
               <span class="bench-label">Rust Release</span>
               <div class="bench-track"><div class="bench-bar" style="width:86%"></div></div>
               <span class="bench-val">7 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label is-melp">MELP</span>
+              <div class="bench-track"><div class="bench-bar is-melp" style="width:75%"></div></div>
+              <span class="bench-val is-melp">8 ms</span>
             </div>
             <div class="bench-row">
               <span class="bench-label">Go</span>
@@ -154,24 +144,19 @@
               Harici fonksiyon çağrıları (malloc) optimizer tarafından silinemez — gerçek performans testidir.
             </p>
             <div class="bench-row">
-              <span class="bench-label">C (GCC -O2)</span>
-              <div class="bench-track"><div class="bench-bar" style="width:6%"></div></div>
-              <span class="bench-val">48 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label is-melp">MELP (OK pasif)</span>
+              <span class="bench-label is-melp">MELP</span>
               <div class="bench-track"><div class="bench-bar is-melp is-best" style="width:100%"></div></div>
               <span class="bench-val is-melp is-best">~2 ms 🚀</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
-              <div class="bench-track"><div class="bench-bar" style="width:0%;opacity:0.2;background:var(--accent-alt);"></div></div>
-              <span class="bench-val" style="color:var(--accent-alt);opacity:0.6;">— PLAN_11</span>
             </div>
             <div class="bench-row">
               <span class="bench-label">Rust Release</span>
               <div class="bench-track"><div class="bench-bar" style="width:24%"></div></div>
               <span class="bench-val">2 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">C (GCC -O2)</span>
+              <div class="bench-track"><div class="bench-bar" style="width:6%"></div></div>
+              <span class="bench-val">48 ms</span>
             </div>
             <div class="bench-row">
               <span class="bench-label">Go</span>
@@ -191,12 +176,7 @@
               <span>100 milyon sayma döngüsü — ⚠️ optimizer testidir, CPU testi DEĞİLDİR</span>
             </div>
             <div class="bench-row">
-              <span class="bench-label">GCC -O2</span>
-              <div class="bench-track"><div class="bench-bar" style="width:15%"></div></div>
-              <span class="bench-val">130 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label is-melp">MELP (OK pasif)</span>
+              <span class="bench-label is-melp">MELP</span>
               <div class="bench-track"><div class="bench-bar is-melp is-best" style="width:100%"></div></div>
               <span class="bench-val is-melp is-best">2 ms 🚀</span>
             </div>
@@ -204,6 +184,11 @@
               <span class="bench-label">Rust Release</span>
               <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
               <span class="bench-val is-best">2 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label">GCC -O2</span>
+              <div class="bench-track"><div class="bench-bar" style="width:15%"></div></div>
+              <span class="bench-val">130 ms</span>
             </div>
             <p style="font-size:0.73rem;color:var(--text-muted);margin-top:0.5rem;">
               ⚠️ <strong>Bu test CPU hızını değil, derleyicinin ölü kodu ne kadar agresif sildiğini ölçer.</strong>
@@ -230,23 +215,18 @@
               <span class="bench-val is-best">48 ms</span>
             </div>
             <div class="bench-row">
-              <span class="bench-label is-melp">MELP (OK pasif)</span>
+              <span class="bench-label is-melp">MELP</span>
               <div class="bench-track"><div class="bench-bar is-melp" style="width:3%"></div></div>
               <span class="bench-val is-melp">1758 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label" style="color:var(--accent-alt);">MELP (OK aktif)</span>
-              <div class="bench-track"><div class="bench-bar" style="width:0%;opacity:0.2;background:var(--accent-alt);"></div></div>
-              <span class="bench-val" style="color:var(--accent-alt);opacity:0.6;">— PLAN_11</span>
             </div>
           </div>
         </div>
 
         <!-- Dipnot -->
         <div class="bench-footer">
-          <span>Yeşil = o grafikteki en iyi değer. Turuncu = MELP. Mavi = OK aktif (PLAN_11 sonrası).</span><br>
+          <span>Yeşil = o grafikteki en iyi değer. Turuncu = MELP.</span><br>
           <span>Rust değeri <strong>release</strong> · Go değeri <strong>go build</strong> · MELP değeri tam native pipeline (clang -O2).</span><br>
-          <span style="font-size:0.73rem;">Kaynak: <code>LLVM/STAGE8/BENCHMARK_OZET.md</code> — 23 Haziran 2026, PD_134. Golden 263,448 byte.</span>
+          <span style="font-size:0.73rem;">Kaynak: <code>LLVM/BORU-5/BENCHMARK_OZET.md</code> — 24 Haziran 2026, C02. Golden 267,064 byte.</span>
         </div>
 
         <!-- Tarihsel ilerleme -->
@@ -259,8 +239,7 @@
                 <tr><td>8 Haz</td><td>STAGE6</td><td>❌</td><td>kullanıcı kodu çalışmıyor</td></tr>
                 <tr><td>11 Haz</td><td>STAGE7 (PD_51)</td><td>298ms</td><td>PLAN_10 generics eklendi</td></tr>
                 <tr style="color:var(--accent);font-weight:600;"><td>11 Haz</td><td>STAGE7 (PD_52)</td><td>228ms</td><td>PLAN_10.5 — %23 iyileşme 🚀</td></tr>
-                <tr style="color:var(--success);font-weight:600;"><td>23 Haz</td><td>STAGE8 (PD_134)</td><td>~255ms</td><td>Self-hosting ✅ Düğme 30 kapandı</td></tr>
-                <tr style="color:var(--accent-alt);opacity:0.6;"><td>—</td><td>STAGE8 (OK aktif)</td><td>—</td><td>PLAN_11 sonrası</td></tr>
+                <tr style="color:var(--success);font-weight:600;"><td>24 Haz</td><td>BORU-5 (C02)</td><td>233ms</td><td>Sentinel OFF 🚀 C'den hızlı</td></tr>
               </tbody>
             </table>
           </div>
@@ -271,7 +250,7 @@
 
     <section class="cta-section">
       <h2>Kendi Testinizi Yapın</h2>
-      <p>STAGE8 derleyicisiyle benchmark'ları yerel makinenizde koşabilirsiniz.</p>
+      <p>BORU-5 derleyicisiyle benchmark'ları kendi makinenizde koşabilirsiniz.</p>
       <div class="btn-group" style="justify-content:center;">
         <a href="kurulum.html" class="btn btn-outline">Kurulum</a>
         <a href="https://github.com/MELP-Lang/MELP" target="_blank" rel="noopener" class="btn btn-primary">GitHub →</a>

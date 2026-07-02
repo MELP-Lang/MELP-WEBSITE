@@ -5,11 +5,10 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const PORT = process.argv[2] || 8080;
-const STAGE8_DIR = '/home/pardus/PROJELER/MELP/LLVM/STAGE8';
+const STAGE9_DIR = '/home/pardus/PROJELER/MELP/LLVM/STAGE9';
 const WASM_DIR = '/home/pardus/PROJELER/MELP/ORTAK/WASM';
-const BUILD_WASM = path.join(WASM_DIR, 'build_wasm.sh');
-const RUN_WASM = path.join(WASM_DIR, 'run_wasm.js');
-const MELP_COMPILER = path.join(STAGE8_DIR, 'bin', 'melp_compiler');
+const MELP_COMPILER = path.join(STAGE9_DIR, 'bin', 'melp_compiler');
+const SHIM_C = path.join(WASM_DIR, 'shim_compiler_wasm.c');
 const EXAMPLES_DIR = path.join(__dirname, 'playground_examples');
 
 function serveFile(res, filePath, contentType) {
@@ -20,27 +19,57 @@ function serveFile(res, filePath, contentType) {
 function compileAndRun(melpCode, callback) {
     const tmpDir = '/tmp/melp_playground';
     const mlpFile = tmpDir + '/user.mlp';
+    const llFile = tmpDir + '/user.ll';
     const wasmFile = tmpDir + '/user.wasm';
     try {
         fs.mkdirSync(tmpDir, {recursive:true});
         fs.writeFileSync(mlpFile, melpCode);
-        const compileCmd = `cd ${STAGE8_DIR} && export MELP_PATH=${STAGE8_DIR} && cp ${mlpFile} /tmp/.melp_compile_src && timeout 10 ${MELP_COMPILER} > ${tmpDir}/user.ll 2>&1`;
-        try { execSync(compileCmd, {timeout:15000}); }
-        catch(e) {
-            const llOutput = fs.readFileSync(tmpDir+'/user.ll','utf-8').trim();
-            const formatted = formatMelpError(llOutput);
-            callback(null, {error: formatted, raw: llOutput});
+        
+        // Step 1: MELP → LLVM IR (STAGE9)
+        try {
+            fs.writeFileSync('/tmp/.melp_compile_src', melpCode);
+            execSync(`cd ${STAGE9_DIR} && export MELP_PATH=${STAGE9_DIR} && timeout 15 ${MELP_COMPILER} > ${llFile} 2>&1`, {timeout:20000});
+        } catch(e) {
+            const llOutput = fs.readFileSync(llFile,'utf-8').trim();
+            callback(null, {error: formatMelpError(llOutput)});
             return;
         }
-        try { execSync(`bash ${BUILD_WASM} ${mlpFile} ${wasmFile} 2>&1`, {timeout:30000}); }
-        catch(e) { callback(null, {error: 'WASM build failed'}); return; }
-        try {
-            const output = execSync(`cd ${WASM_DIR} && node ${RUN_WASM} ${wasmFile} 2>&1`, {timeout:10000});
-            callback(null, {output: output.toString()});
-        } catch(e) {
-            callback(null, {output: e.stdout?e.stdout.toString():'', error: e.stderr?e.stderr.toString():'Runtime error'});
+        
+        // Check for MELP errors in IR output
+        const irContent = fs.readFileSync(llFile,'utf-8').trim();
+        if (irContent.startsWith('HATA') || irContent.includes('HATA [')) {
+            callback(null, {error: formatMelpError(irContent)});
+            return;
         }
-        try { fs.rmSync(tmpDir, {recursive:true}); } catch(e) {}
+        
+        // Step 2: LLVM IR + Shim → WASM (wasm32-wasip1)
+        try {
+            execSync(`clang-22 --target=wasm32-wasip1 -O2 -c ${SHIM_C} -o ${tmpDir}/shim.o 2>&1`, {timeout:15000});
+            execSync(`clang-22 --target=wasm32-wasip1 -O2 -Wl,--no-entry -Wl,--export-all -Wl,--allow-undefined ${tmpDir}/shim.o ${llFile} -o ${wasmFile} 2>&1`, {timeout:15000});
+        } catch(e) {
+            callback(null, {error: 'WASM build failed: ' + e.message});
+            return;
+        }
+        
+        // Step 3: WASM → Node.js (melp_wasm.js)
+        try {
+            const MelpWasm = require(path.join(WASM_DIR, 'melp_wasm.js'));
+            (async () => {
+                try {
+                    await MelpWasm.load(wasmFile);
+                    MelpWasm.run();
+                    const output = MelpWasm.getOutput();
+                    const exitCode = MelpWasm.getExitCode();
+                    callback(null, {output: output, exitCode: exitCode});
+                } catch(e) {
+                    callback(null, {error: 'Runtime error: ' + e.message});
+                }
+            })();
+            return;
+        } catch(e) {
+            callback(null, {error: 'Node.js runtime error: ' + e.message});
+            return;
+        }
     } catch(e) { callback(null, {error: e.message}); }
 }
 

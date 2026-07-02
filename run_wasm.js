@@ -12,7 +12,6 @@ async function main() {
     
     try {
         const instance = await MelpWasm.load(wasmPath);
-        MelpWasm.bindMelpExports();
         MelpWasm.run();
         const output = MelpWasm.getOutput();
         const exitCode = MelpWasm.getExitCode();
