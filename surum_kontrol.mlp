@@ -1,0 +1,21 @@
+-- ============================================================
+-- MODÜL: surum_kontrol.mlp
+-- ROL:   Bu birimin binary'sini STAGE9 kanonik binary ile senkronla
+-- KURAL: Her görev sonunda çalıştır. MM_BASLANGIC.md'deki protokole uy.
+-- ============================================================
+
+function main()
+    string root = "/home/pardus/PROJELER/MELP/LLVM"
+    string cmd = "cd " & root & " && bash check-ekosistem-sync.sh --fix"
+
+    println("=== Surum Kontrol ===")
+    println("Birim: WEB")
+    numeric rc = shell_exec(cmd)
+
+    if rc == 0 then
+        println("Sonuc: SENKRON ✅")
+    else
+        eprintln("HATA: Senkronizasyon basarisiz (rc=" & str(rc) & ")")
+    end if
+    return rc
+end function
