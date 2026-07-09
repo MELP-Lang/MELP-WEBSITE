@@ -1,242 +1,1076 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MELP Playground — STAGE10</title>
+<!--
+  ============================================================
+  MELP Playground — canlı davranış şablonu
+  ============================================================
+  YZ İÇİN NOT:
+  Görsel/UX bu dosyada bitmiştir; DOKUNMA.
+  Değiştirilecek TEK yer: aşağıdaki `MelpRuntime` objesi.
+  Şu an davranışı SİMÜLE ediyor (gerçekten tick atan timer,
+  kapanınca gerçekten susan kaynaklar). Senin işin:
+  bu objenin içindeki simülasyonu gerçek WASM call'larıyla
+  değiştirmek. Arayüz onRuntimeEvent(...) callback'i
+  dinliyor — sen sadece o callback'i gerçek WASM'dan tetikle.
+  Arayüz kodunun geri kalanı runtime'ın gerçek mi sahte mi
+  olduğunu bilmez, umursamaz.
+  ============================================================
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MELP Playground — Scope-bound lifetime, live</title>
+
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; }
-header { background: #161b22; padding: 20px 24px; text-align: center; border-bottom: 1px solid #30363d; }
-header h1 { font-size: 22px; color: #e94560; }
-header p { font-size: 13px; color: #8b949e; margin-top: 4px; }
-.container { max-width: 800px; margin: 0 auto; padding: 20px; }
-.demo-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-.demo-nav button { padding: 8px 16px; border: 1px solid #30363d; border-radius: 6px; background: #161b22; color: #c9d1d9; cursor: pointer; font-size: 13px; transition: all 0.15s; }
-.demo-nav button:hover { border-color: #e94560; }
-.demo-nav button.active { background: #e94560; border-color: #e94560; color: #fff; }
-#btn-run { background: #238636 !important; border-color: #238636 !important; font-weight: bold; margin-left: auto; }
-#btn-run:hover { background: #2ea043 !important; }
-#btn-run:disabled { opacity: 0.6; cursor: wait; }
-.panel { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-.panel h3 { font-size: 14px; color: #8b949e; margin-bottom: 8px; }
-pre { background: #0d1117; border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
-code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
-.kw { color: #ff7b72; }
-.str { color: #a5d6ff; }
-.cm { color: #8b949e; font-style: italic; }
-.output { color: #7ee787; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
-.stat { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px; text-align: center; }
-.stat .val { font-size: 28px; font-weight: bold; color: #e94560; }
-.stat .lbl { font-size: 11px; color: #8b949e; margin-top: 4px; }
-#console { min-height: 80px; max-height: 300px; overflow-y: auto; font-size: 12px; }
+  :root {
+    /* Palet: derin gece-mavisi zemin + canlı kaynaklar için sıcak amber,
+       sönen kaynaklar için soğuk kül. Kırmızı yerine amber→kül geçişi,
+       çünkü mesele "hata" değil "yaşam→ölüm". */
+    --bg:        #0b0e17;
+    --panel:     #121724;
+    --panel-2:   #0e1220;
+    --line:      #1e2637;
+    --ink:       #e6ebf5;
+    --ink-dim:   #7c88a3;
+    --ink-faint: #4a5673;
+    --live:      #ffb14e;   /* canlı kaynak — amber */
+    --live-glow: #ffb14e33;
+    --dead-real: #39445e;   /* sönmüş kaynak — kül */
+    --accent:    #6ea8ff;   /* MELP mavi — nötr aksan */
+    --good:      #4fd1a1;
+    --danger:    #ff6b6b;
+    --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 70% -10%, #16203a 0%, transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 20px 64px;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .logo b { color: var(--live); }
+  .tagline {
+    font-size: 13.5px;
+    color: var(--ink-dim);
+    letter-spacing: 0.01em;
+  }
+  .tagline code {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-size: 12.5px;
+  }
+
+  /* ---------- the thesis line: what makes this different ---------- */
+  .thesis {
+    margin: 18px 0 26px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--live);
+    border-radius: 8px;
+    background: linear-gradient(90deg, var(--live-glow), transparent 70%);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .thesis b { color: var(--live); font-weight: 600; }
+  .thesis .rust {
+    display: block;
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: var(--ink-dim);
+  }
+  .thesis .rust b { color: var(--accent); }
+
+  /* ---------- metrics strip ---------- */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .metric {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 14px 12px;
+  }
+  .metric .val {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+  }
+  .metric .val.amber { color: var(--live); }
+  .metric .val.good  { color: var(--good); }
+  .metric .lab {
+    font-size: 11px;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+  }
+  .metric .q {
+    position: absolute;
+    top: 9px; right: 10px;
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    border: 1px solid var(--ink-faint);
+    color: var(--ink-faint);
+    font-size: 10px;
+    line-height: 13px;
+    text-align: center;
+    cursor: help;
+    font-family: var(--mono);
+  }
+  .metric .q:hover { color: var(--accent); border-color: var(--accent); }
+  .metric .tip {
+    position: absolute;
+    top: 26px; right: 6px;
+    width: 210px;
+    background: #05070d;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--ink-dim);
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity .15s, transform .15s;
+    z-index: 5;
+  }
+  .metric .q:hover + .tip { opacity: 1; transform: translateY(0); }
+  .metric .tip b { color: var(--ink); }
+
+  /* ---------- demo controls ---------- */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .demo-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .dtab {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-dim);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 7px 13px;
+    cursor: pointer;
+    transition: all .14s;
+  }
+  .dtab:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .dtab[aria-selected="true"] {
+    color: var(--bg);
+    background: var(--live);
+    border-color: var(--live);
+    font-weight: 600;
+  }
+  .dtab .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    opacity: .7;
+    margin-left: 5px;
+  }
+  .spacer { flex: 1; }
+  .run {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #06210f;
+    background: var(--good);
+    border: none;
+    border-radius: 7px;
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: filter .14s, transform .05s;
+  }
+  .run:hover { filter: brightness(1.08); }
+  .run:active { transform: translateY(1px); }
+  .run:disabled { opacity: .5; cursor: default; }
+
+  .btn-suspend, .btn-close {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    border: none;
+    border-radius: 7px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: filter .14s, transform .05s;
+    color: #eaf0ff;
+  }
+  .btn-suspend { background: #4a6fa5; }
+  .btn-close   { background: #a5434a; }
+  .btn-suspend:hover, .btn-close:hover { filter: brightness(1.12); }
+  .btn-suspend:active, .btn-close:active { transform: translateY(1px); }
+  .btn-suspend[hidden], .btn-close[hidden] { display: none; }
+
+  /* ---------- main split ---------- */
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 860px) {
+    .split { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .card > .head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 15px;
+    border-bottom: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--ink-dim);
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+  }
+  .card > .head .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ink-faint);
+  }
+
+  /* ---------- code panel ---------- */
+  pre.code {
+    margin: 0;
+    padding: 16px 15px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--ink);
+    overflow-x: auto;
+    tab-size: 2;
+    flex: 1;
+  }
+  .code .kw  { color: #c792ea; }
+  .code .sc  { color: var(--live); }
+  .code .str { color: var(--good); }
+  .code .com { color: var(--ink-faint); font-style: italic; }
+  .code .fn  { color: var(--accent); }
+
+  /* ---------- LIVE MONITOR — the signature element ---------- */
+  .monitor {
+    padding: 14px 15px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    flex: 1;
+  }
+  .res {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    transition: all .4s ease;
+  }
+  .res .pulse {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--dead-real);
+    flex-shrink: 0;
+    transition: background .3s;
+  }
+  .res .rname {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink-dim);
+    min-width: 78px;
+  }
+  .res .rstat {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    flex: 1;
+    letter-spacing: 0.02em;
+  }
+  .res .rtick {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    text-align: right;
+    min-width: 62px;
+  }
+  /* live state */
+  .res.live {
+    border-color: var(--live-glow);
+    background: linear-gradient(90deg, var(--live-glow), var(--panel-2) 55%);
+  }
+  .res.live .pulse {
+    background: var(--live);
+    box-shadow: 0 0 0 0 var(--live);
+    animation: pulse 1.6s infinite;
+  }
+  .res.live .rname { color: var(--ink); }
+  .res.live .rstat { color: var(--live); }
+  .res.live .rtick { color: var(--ink-dim); }
+  /* just-cleaned flash */
+  .res.cleaning {
+    border-color: var(--danger);
+    background: linear-gradient(90deg, #ff6b6b22, var(--panel-2) 55%);
+  }
+  .res.cleaning .pulse { background: var(--danger); animation: none; }
+  .res.cleaning .rstat { color: var(--danger); }
+  /* suspended — mavi, nabız yok, ama DİRİ (üstü çizili değil) */
+  .res.suspended {
+    border-color: #3a5a8f;
+    background: linear-gradient(90deg, #1a2540, var(--panel-2) 60%);
+  }
+  .res.suspended .pulse { background: #6a8fc5; animation: none; }
+  .res.suspended .rname { color: #b8c8e6; }
+  .res.suspended .rstat { color: #6a8fc5; }
+  .res.suspended .rtick { color: #6a8fc5; }
+  /* dead */
+  .res.dead { opacity: .55; }
+  .res.dead .rname { color: var(--ink-faint); text-decoration: line-through; }
+  .res.dead .rstat { color: var(--ink-faint); }
+  .res.dead .rtick { color: var(--ink-faint); }
+
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 var(--live-glow); }
+    70%  { box-shadow: 0 0 0 7px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+
+  .monitor .cleanup-note {
+    margin-top: auto;
+    padding-top: 10px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    border-top: 1px dashed var(--line);
+  }
+  .monitor .cleanup-note b { color: var(--good); }
+  .monitor .cleanup-note.fired b { color: var(--danger); }
+
+  /* ---------- console ---------- */
+  .console-card { margin-top: 14px; }
+  .console {
+    margin: 0;
+    padding: 14px 15px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--ink-dim);
+    height: 190px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .console .ln { display: block; }
+  .console .t-live  { color: var(--live); }
+  .console .t-kill  { color: var(--danger); }
+  .console .t-clean { color: var(--good); }
+  .console .t-sys   { color: var(--ink-faint); }
+  .console .t-susp  { color: #6a8fc5; }
+  .console .t-tick  { color: var(--ink-dim); }
+  .console .cursor { color: var(--live); animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ---------- react comparison (collapsible) ---------- */
+  .compare { margin-top: 14px; }
+  .compare summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 12px 15px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    user-select: none;
+  }
+  .compare summary::-webkit-details-marker { display: none; }
+  .compare summary:hover { color: var(--ink); }
+  .compare summary .chev { transition: transform .2s; color: var(--ink-faint); }
+  .compare[open] summary .chev { transform: rotate(90deg); }
+  .compare summary .count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--danger);
+    margin-left: auto;
+  }
+  .compare .body {
+    border: 1px solid var(--line);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 15px;
+    background: var(--panel-2);
+  }
+  .compare pre {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--ink);
+    overflow-x: auto;
+    tab-size: 2;
+  }
+  .compare .hl { background: #ff6b6b1f; border-radius: 3px; padding: 0 2px; }
+  .compare .cap {
+    margin: 0 0 11px;
+    font-size: 12.5px;
+    color: var(--ink-dim);
+  }
+  .compare .cap b { color: var(--danger); }
+
+  footer {
+    margin-top: 30px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+  footer a { color: var(--ink-dim); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
-</head>
-<body>
-<header>
-  <h1>🦊 MELP Playground</h1>
-  <p>STAGE10 — Scope tabanlı GUI, GC'siz, otomatik ömür yönetimi | WASM < 1KB</p>
-</header>
 
-<div class="container">
-  <div class="stats">
-    <div class="stat"><div class="val" id="wasm-size">0.8</div><div class="lbl">WASM (KB)</div></div>
-    <div class="stat"><div class="val">141</div><div class="lbl">LLVM IR Satır</div></div>
-    <div class="stat"><div class="val">0</div><div class="lbl">Cleanup Kodu</div></div>
-    <div class="stat"><div class="val">0ms</div><div class="lbl">GC Pause</div></div>
+<div class="wrap">
+  <header>
+    <div class="logo">🦊 MELP <b>Playground</b></div>
+    <div class="tagline">scope-bound lifetime · GC-free · <code>WASM &lt; 1KB</code></div>
+  </header>
+
+  <div class="thesis">
+    Kapatılan her scope, sahip olduğu <b>timer · request · state · listener</b>'ı
+    kendiliğinden serbest bırakır — <b>tek satır cleanup kodu yazmadan.</b>
+    <span class="rust">Rust da GC'siz bunu yapar — ama <b>borrow checker</b> ile.
+    MELP aynı güvenliği borrow checker olmadan, lexical scope'tan verir.</span>
   </div>
 
-  <div class="demo-nav">
-    <button class="active" data-demo="tabclose">🗂️ Tab Kapat</button>
-    <button data-demo="counter">🔢 Sayaç</button>
-    <button data-demo="form">📝 Form</button>
-    <button data-demo="toast">🔔 Toast</button>
-    <button id="btn-run">▶ Çalıştır</button>
+  <div class="metrics">
+    <div class="metric">
+      <div class="val amber" id="m-wasm">—</div>
+      <div class="lab">WASM · gzip</div>
+      <div class="q">?</div>
+      <div class="tip"><b>Ne dahil:</b> derlenmiş demo modülü, gzip'li. Runtime ayrı değil — MELP'in runtime'ı yok, temizlik compile-time'da kodlanır.</div>
+    </div>
+    <div class="metric">
+      <div class="val" id="m-cleanup">0</div>
+      <div class="lab">Cleanup satırı</div>
+      <div class="q">?</div>
+      <div class="tip">Kaynakları temizlemek için yazılan manuel kod satırı. Aşağıdaki React karşılığında bu sayı <b>4</b>.</div>
+    </div>
+    <div class="metric">
+      <div class="val good" id="m-leak">0</div>
+      <div class="lab">Sızıntı</div>
+      <div class="q">?</div>
+      <div class="tip">Scope kapandıktan sonra hâlâ canlı kalan kaynak. Ölçüm değil, mimari garanti: kapanan scope'un kaynağı canlı kalamaz.</div>
+    </div>
+    <div class="metric">
+      <div class="val good" id="m-gc">0ms</div>
+      <div class="lab">GC durması</div>
+      <div class="q">?</div>
+      <div class="tip">GC yok, dolayısıyla GC durması yok. Rakam değil, tanım.</div>
+    </div>
   </div>
 
-  <div class="panel">
-    <h3>📄 MELP Kaynak Kodu</h3>
-    <pre><code id="source-code"></code></pre>
+  <div class="controls">
+    <div class="demo-tabs" role="tablist" aria-label="Demolar">
+      <button class="dtab" role="tab" aria-selected="true"  data-demo="tab">Tab Kapat <span class="badge">4 kaynak</span></button>
+      <button class="dtab" role="tab" aria-selected="false" data-demo="counter">Sayaç</button>
+      <button class="dtab" role="tab" aria-selected="false" data-demo="toast">Toast <span class="badge">life=3s</span></button>
+    </div>
+    <div class="spacer"></div>
+    <button class="run" id="run">▶ Çalıştır</button>
+    <button class="btn-suspend" id="suspend" hidden>⏸ Duraklat</button>
+    <button class="btn-close" id="close" hidden>✕ Tab'ı Kapat</button>
   </div>
 
-  <div class="panel">
-    <h3>🖥️ Çıktı</h3>
-    <pre id="console"></pre>
+  <div class="split">
+    <div class="card">
+      <div class="head"><span class="dot"></span> <span id="code-title">demo_tab_close.mlp</span></div>
+      <pre class="code" id="code"></pre>
+    </div>
+
+    <div class="card">
+      <div class="head"><span class="dot"></span> Canlı kaynak monitörü</div>
+      <div class="monitor" id="monitor"><!-- resources injected --></div>
+    </div>
   </div>
+
+  <div class="card console-card">
+    <div class="head"><span class="dot"></span> Çıktı</div>
+    <pre class="console" id="console"><span class="ln t-sys">// ▶ Çalıştır'a bas — kaynaklar canlanacak, sonra Tab Kapat ile sönecek.</span><span class="ln"><span class="cursor">▋</span></span></pre>
+  </div>
+
+  <details class="compare">
+    <summary>
+      <span class="chev">▸</span>
+      Aynı senaryo React'ta nasıl görünürdü?
+      <span class="count">4 manuel cleanup</span>
+    </summary>
+    <div class="body">
+      <p class="cap">React'ta aynı 4 kaynağı temizlemek için <b>4 ayrı manuel cleanup</b> yazarsın. Birini unutursan sızıntı olur — ve derleyici seni uyarmaz.</p>
+      <pre id="react-code"></pre>
+    </div>
+  </details>
+
+  <footer>
+    <a href="https://melp.dev" target="_blank" rel="noopener">melp.dev</a>
+    <a href="#" id="paper-link">Onward! 2027 draft (ePrint)</a>
+    <a href="https://github.com/guvenacar" target="_blank" rel="noopener">GitHub</a>
+    <span style="margin-left:auto">Lexically-scoped resource lifetime, no GC, no borrow checker.</span>
+  </footer>
 </div>
 
 <script>
-const demos = {
-  tabclose: {
-    source: `-- MELP'in farkı: Tab kapanınca 4 kaynak OTOMATİK temizlenir
--- cleanup(), dispose(), destroy(), removeListener() YOK.
+/* ============================================================
+   PART A — RUNTIME ADAPTER  ⟵  YZ: SADECE BURAYI DEĞİŞTİR
+   ------------------------------------------------------------
+   Arayüz bu objeyi çağırır ve onRuntimeEvent(evt) ile geri
+   bildirim bekler. Şu an davranış SİMÜLE ediliyor. Gerçek
+   WASM'a bağlarken:
+     - start(demo): WASM modülünü yükle/çalıştır, scope'ları aç
+     - stop():      aktif scope'un kapanışını tetikle
+                    (mlp_dispatch_event ile tab_close event'i)
+   ve her gerçek runtime olayında onRuntimeEvent(...) çağır.
+   Event şeması aşağıda EVENTS bölümünde. Arayüzü değiştirme.
+   ============================================================ */
 
-scope TabApp
-    scope "Window Scope"
-        scope TabScope("Veri Sekmesi")
-            scope TimerScope
-                string name = "refresh_timer"
-            end scope
-            scope RequestScope
-                string url = "https://api.example.com/data"
-            end scope
-            scope StateScope
-                string data = ""
-            end scope
-            scope ListenerScope
-                string key = "Ctrl+S"
-            end scope
-            scope ButtonScope("Kapat")
-                string button_text = "Sekmeyi Kapat"
-            end scope
-        end scope
-    end scope
-end scope
+const MelpRuntime = (() => {
+  // Her demonun sahip olduğu kaynaklar (gerçek WASM'da scope ağacından gelir)
+  const DEMOS = {
+    tab: {
+      title: "demo_tab_close.mlp",
+      resources: [
+        { id:"timer",    name:"timer",    live:"tick atıyor",        kill:"timer.cancel()" },
+        { id:"request",  name:"request",  live:"GET bekliyor",       kill:"request.abort()" },
+        { id:"state",    name:"state",    live:"bellekte 1.2KB",     kill:"state.free()" },
+        { id:"listener", name:"listener", live:"Ctrl+S dinliyor",    kill:"listener.remove()" },
+      ],
+      closeLabel: "Tab Kapat",
+    },
+    counter: {
+      title: "demo_counter.mlp",
+      resources: [
+        { id:"state",    name:"count",    live:"değer = 0",          kill:"state.free()" },
+        { id:"listener", name:"onClick",  live:"tıklama dinliyor",   kill:"listener.remove()" },
+      ],
+      closeLabel: "Scope Kapat",
+      counter: true,
+    },
+    toast: {
+      title: "demo_toast.mlp",
+      resources: [
+        { id:"timer",    name:"life=3s",  live:"3.0s → 0",           kill:"timer.expired → auto-close" },
+        { id:"state",    name:"message",  live:"\"Kaydedildi\"",     kill:"state.free()" },
+      ],
+      closeLabel: "—",
+      autoClose: 3000,
+    },
+  };
 
-numeric function main()
-    return 0
-end function`,
-    highlight: 'Tab kapanınca → 4 kaynak OTOMATİK temizlenir. Tek satır cleanup kodu YOK.'
-  },
-  counter: {
-    source: `scope Counter Scope
-    numeric count = 0
-    scope Button Scope("+")
-        onClick -> channel increment
-    end scope
-    scope Button Scope("-")
-        onClick -> channel decrement
-    end scope
-    scope Label Scope("0")
-    end scope
+  let cb = () => {};
+  let active = null;      // current demo key
+  let ticks = {};         // per-resource tick counters
+  let intervals = [];     // sim timers (WASM'da gerekmez)
+  let counterVal = 0;
+  let toastRemaining = 0;
+  let suspended = false;  // ACTIVE mı SUSPENDED mı
 
-    increment.receive() -> { count = count + 1 }
-    decrement.receive() -> { count = count - 1 }
-end scope
+  function emit(type, payload) { cb({ type, ...payload }); }
 
-numeric function main()
-    return 0
-end function`,
-    highlight: 'State değişimi: onClick → channel → count++. useState/Redux YOK.'
-  },
-  form: {
-    source: `scope Form Scope
-    scope TextInput Scope("email")
-        onChange -> channel email_changed
-    end scope
-    scope TextInput Scope("password")
-        onChange -> channel password_changed
-    end scope
-    scope Button Scope("Giriş")
-    end scope
-end scope
+  function clearSim() { intervals.forEach(clearInterval); intervals = []; }
 
-numeric function main()
-    return 0
-end function`,
-    highlight: 'Sibling koordinasyonu: channel ile, doğrudan referans YOK.'
-  },
-  toast: {
-    source: `scope Toast Scope
-    life = 3s
-    scope Label Scope("İşlem tamamlandı!")
-    end scope
-end scope
+  // --- PUBLIC API (arayüzün gördüğü yüzey) ---
+  return {
+    demos: DEMOS,
+    onEvent(fn) { cb = fn; },
 
-numeric function main()
-    return 0
-end function`,
-    highlight: '3 saniye sonra scope OTOMATİK kapanır. Widget + timer → temiz.'
+    // Bir demoyu başlat: scope'ları aç, kaynakları canlandır
+    start(demo) {
+      clearSim();
+      active = demo;
+      const d = DEMOS[demo];
+      ticks = {}; d.resources.forEach(r => ticks[r.id] = 0);
+      counterVal = 0;
+
+      emit("run_start", { demo, resources: d.resources.map(r => r.id) });
+      suspended = false;
+
+      // Her kaynağı "açıldı → canlı" olarak bildir (top-down open sırası)
+      d.resources.forEach((r, i) => {
+        setTimeout(() => emit("resource_open", { id:r.id, name:r.name, status:r.live }), 90 * (i+1));
+      });
+
+      // Bu demo suspend destekliyor mu? (autoClose olanlar desteklemez)
+      if (!d.autoClose) {
+        setTimeout(() => emit("suspend_available", {}), 90 * (d.resources.length + 1));
+      }
+
+      startTicking(d);
+    },
+
+    // Aktif scope'u kapat: kapanış zinciri (gerçek WASM'da tab_close event'i)
+    stop() {
+      if (!active) return;
+      const d = DEMOS[active];
+      if (d.autoClose) return; // toast kendi kapanır
+      clearSim();
+      suspended = false;
+      emit("close_start", {});
+      closeAll(d);
+    },
+
+    // Aktif scope'u askıya al: ACTIVE → SUSPENDED
+    // Timer'lar durur AMA hiçbir kaynak ölmez, state korunur.
+    suspend() {
+      if (!active || suspended) return;
+      const d = DEMOS[active];
+      if (d.autoClose) return; // toast suspend edilemez
+      clearSim();              // tick döngüleri durur — ama ticks{} sayaçları KORUNUR
+      suspended = true;
+      // O anki tick değeri (timer varsa timer, yoksa counter)
+      const tickN = d.counter ? counterVal : (ticks.timer || 0);
+      emit("scope_suspended", { tick_n: tickN });
+    },
+
+    // Askıdan çıkar: SUSPENDED → ACTIVE. Sayaçlar kaldığı yerden sürer.
+    resume() {
+      if (!active || !suspended) return;
+      const d = DEMOS[active];
+      suspended = false;
+      const tickN = d.counter ? counterVal : (ticks.timer || 0);
+      emit("scope_resumed", { tick_n: tickN });
+      startTicking(d);         // kaldığı yerden devam — ticks{} sıfırlanmadı
+    },
+
+    isRunning() { return intervals.length > 0 || suspended; },
+    isSuspended() { return suspended; },
+    current() { return active; },
+  };
+
+  // Tick döngülerini başlat (start ve resume ortak kullanır).
+  // ticks{}/counterVal sıfırlanmaz — resume'da kaldığı yerden sürsün diye.
+  function startTicking(d) {
+    const hasTimer = d.resources.some(r => r.id === "timer");
+    if (hasTimer && !d.autoClose) {
+      const iv = setInterval(() => {
+        ticks.timer++;
+        emit("tick", { id:"timer", n:ticks.timer, label:`tick ${ticks.timer}` });
+      }, 1000);
+      intervals.push(iv);
+    }
+    if (d.counter) {
+      const iv = setInterval(() => {
+        counterVal++;
+        ticks.state = counterVal;
+        emit("tick", { id:"state", n:counterVal, label:`değer = ${counterVal}` });
+      }, 900);
+      intervals.push(iv);
+    }
+    if (d.autoClose) {
+      toastRemaining = (toastRemaining || d.autoClose);
+      const iv = setInterval(() => {
+        toastRemaining -= 100;
+        const s = (toastRemaining/1000).toFixed(1);
+        emit("tick", { id:"timer", n:toastRemaining, label:`${s}s` });
+        if (toastRemaining <= 0) {
+          clearSim();
+          emit("auto_close", { reason:"life=3s doldu" });
+          closeAll(d);
+        }
+      }, 100);
+      intervals.push(iv);
+    }
   }
+
+  // Kapanış zinciri: bottom-up, her kaynak tek tek temizlenir
+  function closeAll(d) {
+    const order = [...d.resources].reverse(); // bottom-up
+    order.forEach((r, i) => {
+      setTimeout(() => {
+        emit("resource_cleaning", { id:r.id, action:r.kill });
+        setTimeout(() => emit("resource_dead", { id:r.id }), 260);
+      }, 300 * i);
+    });
+    setTimeout(() => emit("close_done", {
+      count: d.resources.length
+    }), 300 * order.length + 300);
+  }
+})();
+
+/* ============================================================
+   PART B — UI  ⟵  YZ: DOKUNMA
+   Runtime'dan gelen event'leri dinler, DOM'u günceller.
+   Gerçek mi sahte mi bilmez.
+   ============================================================ */
+
+const $ = s => document.querySelector(s);
+const monitorEl = $("#monitor");
+const consoleEl = $("#console");
+const runBtn = $("#run");
+const codeEl = $("#code");
+const codeTitle = $("#code-title");
+
+/* ---- MELP source snippets (görsel, syntax-highlighted) ---- */
+const SOURCES = {
+  tab: `<span class="com">-- Tab kapanınca 4 kaynak OTOMATİK temizlenir.</span>
+<span class="com">-- cleanup / dispose / destroy / remove YOK.</span>
+
+<span class="kw">scope</span> <span class="sc">TabScope</span>(<span class="str">"Veri Sekmesi"</span>)
+    <span class="kw">scope</span> <span class="sc">TimerScope</span>    <span class="com">-- her saniye tick</span>
+    <span class="kw">scope</span> <span class="sc">RequestScope</span>  <span class="com">-- GET bekliyor</span>
+    <span class="kw">scope</span> <span class="sc">StateScope</span>    <span class="com">-- bellekte veri</span>
+    <span class="kw">scope</span> <span class="sc">ListenerScope</span> <span class="com">-- Ctrl+S dinliyor</span>
+
+    <span class="sc">ButtonScope</span>(<span class="str">"Kapat"</span>)
+        onClick -&gt; <span class="kw">channel</span> tab_close
+<span class="kw">end scope</span>
+<span class="com">-- channel tab_close → TabScope kapanır</span>
+<span class="com">-- → 4 alt scope bottom-up OTOMATİK kapanır</span>`,
+
+  counter: `<span class="com">-- En basit zincir: onClick → state → ekran</span>
+
+<span class="kw">scope</span> <span class="sc">CounterScope</span>
+    <span class="kw">state</span> count = <span class="str">0</span>
+
+    <span class="sc">ButtonScope</span>(<span class="str">"+1"</span>)
+        onClick -&gt; <span class="kw">channel</span> inc
+    inc.receive() -&gt; { count = count + <span class="str">1</span> }
+<span class="kw">end scope</span>
+<span class="com">-- scope kapanınca count ve listener gider</span>`,
+
+  toast: `<span class="com">-- life=3s: süre dolunca scope KENDİ kapanır</span>
+
+<span class="kw">scope</span> <span class="sc">ToastScope</span>
+    <span class="kw">life</span> = <span class="str">3s</span>
+    <span class="kw">state</span> message = <span class="str">"Kaydedildi"</span>
+<span class="kw">end scope</span>
+<span class="com">-- 3s sonra: widget + state + timer OTOMATİK gider</span>
+<span class="com">-- kapatma kodu YAZILMAZ</span>`,
 };
 
-let currentDemo = 'tabclose';
-let wasmCache = {};
+const REACT_SOURCES = {
+  tab: `useEffect(() =&gt; {
+  const timer = setInterval(refresh, 1000);
+  const ctrl  = new AbortController();
+  fetch(url, { signal: ctrl.signal });
+  const onKey = e =&gt; { if (e.ctrlKey &amp;&amp; e.key==='s') save(); };
+  window.addEventListener('keydown', onKey);
 
-function formatSource(src) {
-  return src
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/--.*/g, m => `<span class="cm">${m}</span>`)
-    .replace(/(".*?")/g, m => `<span class="str">${m}</span>`)
-    .replace(/\b(scope|end scope|numeric|string|function|return|if|then|else|loop|external|life|onClick|onChange|channel|receive)\b/g, m => `<span class="kw">${m}</span>`);
+  return () =&gt; {                    <span class="hl">// ← manuel cleanup</span>
+    <span class="hl">clearInterval(timer);</span>          <span class="hl">// 1</span>
+    <span class="hl">ctrl.abort();</span>                  <span class="hl">// 2</span>
+    <span class="hl">setState(null);</span>                <span class="hl">// 3</span>
+    <span class="hl">window.removeEventListener('keydown', onKey);</span> <span class="hl">// 4</span>
+  };                               <span class="com">// birini unut → sızıntı</span>
+}, []);`,
+  counter: `const [count, setCount] = useState(0);
+useEffect(() =&gt; {
+  const onClick = () =&gt; setCount(c =&gt; c + 1);
+  btn.addEventListener('click', onClick);
+  return () =&gt; <span class="hl">btn.removeEventListener('click', onClick);</span> <span class="com">// unutma!</span>
+}, []);`,
+  toast: `useEffect(() =&gt; {
+  const t = setTimeout(() =&gt; setShow(false), 3000);
+  return () =&gt; <span class="hl">clearTimeout(t);</span> <span class="com">// unmount olursa sızıntı</span>
+}, []);`,
+};
+
+const REACT_COUNTS = { tab: "4 manuel cleanup", counter: "1 manuel cleanup", toast: "1 manuel cleanup" };
+
+/* ---- console helpers ---- */
+function log(text, cls="") {
+  // remove trailing cursor line
+  const cur = consoleEl.querySelector(".cursor");
+  if (cur) cur.parentElement.remove();
+  const ln = document.createElement("span");
+  ln.className = "ln" + (cls ? " " + cls : "");
+  ln.textContent = text;
+  consoleEl.appendChild(ln);
+  const c = document.createElement("span");
+  c.className = "ln";
+  c.innerHTML = '<span class="cursor">▋</span>';
+  consoleEl.appendChild(c);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+function clearConsole() {
+  consoleEl.innerHTML = '<span class="ln"><span class="cursor">▋</span></span>';
 }
 
-async function runDemo() {
-  const btn = document.getElementById('btn-run');
-  const consoleEl = document.getElementById('console');
-  btn.textContent = '⏳ Çalışıyor...';
-  btn.disabled = true;
-  
-  try {
-    let wasmData;
-    if (wasmCache[currentDemo]) {
-      wasmData = wasmCache[currentDemo];
-    } else {
-      const resp = await fetch(`wasm/demo_${currentDemo}.wasm`);
-      if (!resp.ok) throw new Error(`${currentDemo}.wasm yüklenemedi`);
-      const bytes = await resp.arrayBuffer();
-      wasmData = { bytes, size: bytes.byteLength };
-      wasmCache[currentDemo] = wasmData;
+/* ---- monitor rendering ---- */
+function renderMonitor(demoKey) {
+  const d = MelpRuntime.demos[demoKey];
+  monitorEl.innerHTML = "";
+  d.resources.forEach(r => {
+    const row = document.createElement("div");
+    row.className = "res";
+    row.id = "res-" + r.id;
+    row.innerHTML =
+      `<span class="pulse"></span>` +
+      `<span class="rname">${r.name}</span>` +
+      `<span class="rstat">uykuda</span>` +
+      `<span class="rtick">—</span>`;
+    monitorEl.appendChild(row);
+  });
+  const note = document.createElement("div");
+  note.className = "cleanup-note";
+  note.id = "cleanup-note";
+  note.innerHTML = `programcının yazdığı temizlik kodu: <b>0 satır</b>`;
+  monitorEl.appendChild(note);
+}
+
+function setRes(id, { cls, stat, tick }) {
+  const row = $("#res-" + id);
+  if (!row) return;
+  if (cls) row.className = "res " + cls;
+  if (stat != null) row.querySelector(".rstat").textContent = stat;
+  if (tick != null) row.querySelector(".rtick").textContent = tick;
+}
+
+/* ---- current demo state ---- */
+let currentDemo = "tab";
+let finished = false;
+
+function loadDemo(key) {
+  currentDemo = key;
+  finished = false;
+  codeEl.innerHTML = SOURCES[key];
+  codeTitle.textContent = MelpRuntime.demos[key].title;
+  $("#react-code").innerHTML = REACT_SOURCES[key];
+  document.querySelector(".compare .count").textContent = REACT_COUNTS[key];
+  $("#m-cleanup").textContent = "0";
+  renderMonitor(key);
+  clearConsole();
+  setButtons("idle");
+}
+
+/* ---- runtime event handler: the bridge ---- */
+MelpRuntime.onEvent(evt => {
+  switch (evt.type) {
+    case "run_start":
+      log(`▶ ${MelpRuntime.demos[evt.demo].title} çalışıyor…`, "t-sys");
+      log(`  scope açılıyor (top-down)…`, "t-sys");
+      break;
+
+    case "resource_open":
+      setRes(evt.id, { cls:"live", stat:evt.status, tick:"canlı" });
+      log(`  ● ${evt.name} AÇILDI — ${evt.status}`, "t-live");
+      break;
+
+    case "suspend_available":
+      // suspend destekleniyor (buton görünürlüğü setButtons ile yönetilir)
+      break;
+
+    case "scope_suspended": {
+      // TÜM kaynaklar askıya alınır (sadece timer değil) — scope bütün olarak donar
+      const d = MelpRuntime.demos[currentDemo];
+      d.resources.forEach(r => {
+        const row = $("#res-" + r.id);
+        const curTick = row ? row.querySelector(".rtick").textContent.replace("↻","").trim() : "";
+        setRes(r.id, { cls:"suspended", stat:"askıda — korunuyor",
+                       tick: curTick && curTick !== "—" ? curTick + " ⏸" : "askıda" });
+      });
+      log(``);
+      log(`⏸ scope SUSPENDED — tick ${evt.tick_n}'de donduruldu`, "t-susp");
+      log(`  kaynaklar DİRİ, state korunuyor · hiçbiri ölmedi`, "t-susp");
+      break;
     }
-    
-    const { instance } = await WebAssembly.instantiate(wasmData.bytes, {
-      env: {
-        memory: new WebAssembly.Memory({ initial: 2, maximum: 16 }),
-        puts: (ptr) => {
-          const mem = new Uint8Array(instance.exports.memory.buffer);
-          let str = '';
-          for (let i = ptr; mem[i] !== 0; i++) str += String.fromCharCode(mem[i]);
-          consoleEl.innerHTML += `<span class="output">${str}</span>`;
-        },
-        exit: () => {}
+
+    case "scope_resumed": {
+      const d = MelpRuntime.demos[currentDemo];
+      d.resources.forEach(r => {
+        setRes(r.id, { cls:"live", stat:r.id==="timer"?"tick atıyor":
+                       (MelpRuntime.demos[currentDemo].resources.find(x=>x.id===r.id)||{}).live || "canlı",
+                       tick:"canlı" });
+      });
+      log(`▶ scope RESUMED — tick ${evt.tick_n}'den devam ediyor`, "t-live");
+      break;
+    }
+
+    case "tick": {
+      const t = MelpRuntime.demos[currentDemo].autoClose ? evt.label : `↻ ${evt.label}`;
+      setRes(evt.id, { tick: t });
+      // only log occasionally to avoid flooding
+      if (evt.id === "timer" && !MelpRuntime.demos[currentDemo].autoClose) {
+        log(`  ↻ timer ${evt.label}`, "t-tick");
+      } else if (MelpRuntime.demos[currentDemo].counter && evt.id==="state") {
+        log(`  ↻ ${evt.label}`, "t-tick");
       }
-    });
-
-    const t0 = performance.now();
-    let result = 0;
-    if (instance.exports.melp_main) {
-      result = instance.exports.melp_main();
+      break;
     }
-    const t1 = performance.now();
-    
-    consoleEl.innerHTML += `<span class="output">exit: ${result} ✅</span>\n`;
-    consoleEl.innerHTML += `<span class="cm">⏱ ${(t1-t0).toFixed(1)}ms | WASM: ${wasmData.size}B | IR: 141 satır | cleanup: 0 satır</span>\n`;
-    
-    btn.textContent = '▶ Çalıştır';
-    btn.style.background = '#238636';
-  } catch (err) {
-    consoleEl.innerHTML += `<span style="color:#ff7b72">❌ ${err.message}</span>\n`;
-    btn.textContent = '▶ Tekrar Dene';
-    btn.style.background = '#da3633';
+
+    case "close_start":
+      log(``);
+      log(`✕ Tab Kapat → TabScope kapanıyor (bottom-up)…`, "t-kill");
+      break;
+
+    case "auto_close":
+      log(``);
+      log(`⏱ ${evt.reason} → scope KENDİ kapanıyor…`, "t-kill");
+      break;
+
+    case "resource_cleaning":
+      setRes(evt.id, { cls:"cleaning", stat:evt.action, tick:"temizleniyor" });
+      log(`  ✕ ${evt.action}   [OTOMATİK]`, "t-kill");
+      break;
+
+    case "resource_dead":
+      setRes(evt.id, { cls:"dead", stat:"serbest bırakıldı", tick:"✕" });
+      break;
+
+    case "close_done": {
+      finished = true;
+      const note = $("#cleanup-note");
+      note.classList.add("fired");
+      note.innerHTML = `${evt.count} kaynak temizlendi · programcının yazdığı kod: <b>0 satır</b>`;
+      log(``);
+      log(`✓ ${evt.count} kaynak serbest — sen 0 satır cleanup yazdın.`, "t-clean");
+      log(`  sızıntı: 0 · dangling: 0 · scope CLOSED`, "t-clean");
+      log(``);
+      log(`exit: 0`, "t-sys");
+      closeBtn.disabled = false;
+      setButtons("closed");
+      break;
+    }
   }
-  btn.disabled = false;
-}
-
-function showDemo(demoId) {
-  currentDemo = demoId;
-  const demo = demos[demoId];
-  document.getElementById('source-code').innerHTML = formatSource(demo.source);
-  
-  document.querySelectorAll('.demo-nav button:not(#btn-run)').forEach(b => b.classList.remove('active'));
-  document.querySelector(`[data-demo="${demoId}"]`).classList.add('active');
-  
-  const consoleEl = document.getElementById('console');
-  consoleEl.innerHTML = `<span class="cm">// ${demo.highlight}</span>\n`;
-  consoleEl.innerHTML += `<span class="cm">// ▶ Çalıştır'a basın</span>\n\n`;
-  
-  document.getElementById('btn-run').textContent = '▶ Çalıştır';
-  document.getElementById('btn-run').style.background = '#238636';
-}
-
-// Buton handler'ları
-document.querySelectorAll('.demo-nav button[data-demo]').forEach(btn => {
-  btn.addEventListener('click', () => showDemo(btn.dataset.demo));
 });
-document.getElementById('btn-run').addEventListener('click', runDemo);
 
-// Başlangıç
-showDemo('tabclose');
+/* ---- controls: üç buton, üç durum ---- */
+const suspendBtn = $("#suspend");
+const closeBtn = $("#close");
+
+// Buton görünürlüğünü scope durumuna göre ayarla
+function setButtons(state) {
+  // state: "idle" | "running" | "suspended" | "closed"
+  const d = MelpRuntime.demos[currentDemo];
+  const supportsSuspend = !d.autoClose;
+  switch (state) {
+    case "idle":
+      runBtn.hidden = false; runBtn.disabled = false; runBtn.textContent = "▶ Çalıştır";
+      suspendBtn.hidden = true;
+      closeBtn.hidden = true;
+      break;
+    case "running":
+      runBtn.hidden = true;
+      suspendBtn.hidden = !supportsSuspend;
+      suspendBtn.textContent = "⏸ Duraklat";
+      closeBtn.hidden = d.autoClose;   // toast kendi kapanır, kapat butonu yok
+      closeBtn.textContent = "✕ " + (d.closeLabel === "—" ? "Kapat" : d.closeLabel);
+      break;
+    case "suspended":
+      runBtn.hidden = true;
+      suspendBtn.hidden = false;
+      suspendBtn.textContent = "▶ Devam et";
+      closeBtn.hidden = false;
+      break;
+    case "closed":
+      runBtn.hidden = false; runBtn.disabled = false; runBtn.textContent = "▶ Tekrar çalıştır";
+      suspendBtn.hidden = true;
+      closeBtn.hidden = true;
+      break;
+  }
+}
+
+runBtn.addEventListener("click", () => {
+  const d = MelpRuntime.demos[currentDemo];
+  clearConsole();
+  renderMonitor(currentDemo);
+  $("#cleanup-note")?.classList.remove("fired");
+  MelpRuntime.start(currentDemo);
+  if (d.autoClose) {
+    // toast: kendi kapanır, sadece bekle
+    runBtn.hidden = true; suspendBtn.hidden = true; closeBtn.hidden = true;
+  } else {
+    setButtons("running");
+  }
+});
+
+suspendBtn.addEventListener("click", () => {
+  if (MelpRuntime.isSuspended()) {
+    MelpRuntime.resume();
+    setButtons("running");
+  } else {
+    MelpRuntime.suspend();
+    setButtons("suspended");
+  }
+});
+
+closeBtn.addEventListener("click", () => {
+  MelpRuntime.stop();
+  // butonlar close_done event'inde "closed"a geçecek; şimdilik kilitle
+  suspendBtn.hidden = true;
+  closeBtn.disabled = true;
+});
+
+document.querySelectorAll(".dtab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".dtab").forEach(t => t.setAttribute("aria-selected","false"));
+    tab.setAttribute("aria-selected","true");
+    if (MelpRuntime.isRunning()) MelpRuntime.stop();
+    closeBtn.disabled = false;
+    loadDemo(tab.dataset.demo);
+  });
+});
+
+/* ---- WASM size metric (YZ: gerçek gzip boyutunu buraya yaz) ---- */
+$("#m-wasm").textContent = "0.8KB";
+
+/* ---- paper link placeholder ---- */
+$("#paper-link").addEventListener("click", e => {
+  e.preventDefault();
+  alert("YZ: ePrint / Onward! draft URL'ini buraya bağla.");
+});
+
+/* init */
+loadDemo("tab");
 </script>
-</body>
-</html>
