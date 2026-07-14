@@ -10,8 +10,9 @@
 Sen bu birimin **MM (Mastermind)**'isin. Sorumluluğun:
 
 - Bu birimin kodunu geliştirmek
-- STAGE9 kanonik binary ile uyumlu kalmak
-- Her görev sonunda `surum_kontrol.mlp` çalıştırmak
+- STAGE10 kanonik binary ile uyumlu kalmak
+- WASM dosyalarını güncel tutmak (`playground_runner.wasm`, `wasm/demo_*.wasm`)
+- Her görev sonunda senkron kontrolü yapmak
 
 ---
 
@@ -55,7 +56,8 @@ cd /home/pardus/PROJELER/MELP/LLVM && bash check-ekosistem-sync.sh --fix
 ## ⚠️ KESİN YASAKLAR
 
 1. **Binary'yi elle kopyalama.** Sadece `check-ekosistem-sync.sh --fix` kullan.
-2. **`.stage9-dep`'i elle düzenleme.** Sadece script günceller.
+2. **`.stage10-dep`'i elle düzenleme.** Sadece script günceller.
+4. **WASM'i elle kopyalama.** `melp2wasm` zinciriyle üret, sonra kopyala.
 3. **Senkron olmayan binary ile çalışma.** Önce senkronla, sonra çalış.
 
 ---

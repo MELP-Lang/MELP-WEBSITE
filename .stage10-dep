@@ -1,0 +1,8 @@
+{
+  "stage10_sha256": "34b1a097657de6b542951ecfec57e7c3165941673bb97c257b7f24cba8176abc",
+  "stage10_size": 350392,
+  "last_synced": "2026-07-14",
+  "component": "WEB",
+  "wasm_runner": "playground_runner.wasm",
+  "note": "STAGE10 (PDA_37). WASM update: C.1 sprint 910 byte → WEB/playground_runner.wasm yenilenmeli."
+}
