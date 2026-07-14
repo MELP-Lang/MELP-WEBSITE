@@ -33,3 +33,8 @@ MM_PROJE_SON_DURUM.md
 YZ_Bunu_Oku.md
 MM_LOG.md
 MM_DEVIR_TESLIM*
+
+# Local dev symlinks (Cloudflare Pages erisemez)
+main.mlp
+modules
+compiler
