@@ -1,0 +1,128 @@
+<!doctype html>
+<!--
+  playground_selftest.html — melp-playground.html tarayıcı kanıt testi
+  =====================================================================
+  Playground'u iframe'de açar, PART B butonlarına GERÇEK click gönderir
+  ve DOM'dan gözlemler. Yani zincirin TAMAMI test edilir:
+    buton → PART B handler → PART A adapter → WASM → pg_emit → DOM.
+  Not: Bu sayfadaki setTimeout'lar TEST RIG'idir (bekleme/poll) —
+  playground'un kendisinde (PART A) timer yoktur; tick WASM'dan gelir.
+
+  Koşum (sanal zamanla hızlandırılmış):
+    python3 -m http.server --directory demos 8000 &
+    chromium --headless=new --virtual-time-budget=40000 \
+             --dump-dom http://localhost:8000/playground_selftest.html
+  Sonuç: <title> ve #log içinde PASS/FAIL satırları.
+-->
+<meta charset="utf-8">
+<title>RUNNING</title>
+<style>body{font-family:monospace;white-space:pre}iframe{width:1080px;height:900px;border:1px solid #999}</style>
+<div id="log"></div>
+<iframe id="f" src="melp-playground.html"></iframe>
+<script>
+const logEl = document.getElementById("log");
+const results = [];
+let pass = 0, fail = 0;
+function check(name, cond, detail) {
+  const line = (cond ? "✅ PASS " : "❌ FAIL ") + name + (cond ? "" : " — " + detail);
+  results.push(line); logEl.textContent = results.join("\n");
+  cond ? pass++ : fail++;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const f = document.getElementById("f");
+
+function idoc() { return f.contentDocument; }
+function txt(sel) { const e = idoc().querySelector(sel); return e ? e.textContent : ""; }
+function click(sel) { idoc().querySelector(sel).click(); }
+function tickLines() { return (txt("#console").match(/↻ timer tick \d+/g) || []); }
+async function until(fn, timeout, what) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) { if (fn()) return true; await sleep(150); }
+  throw new Error("timeout: " + what);
+}
+
+(async () => {
+  try {
+    await new Promise(r => f.addEventListener("load", r, { once: true }));
+
+    // WASM hazır olana kadar bekle (m-wasm gerçek ölçümle dolunca)
+    await until(() => /KB/.test(txt("#m-wasm")), 8000, "wasm yükleme");
+    check("W0: WASM yüklendi, gzip boyutu gerçek ölçüm", /^\d+\.\d+KB/.test(txt("#m-wasm").trim()), txt("#m-wasm"));
+
+    // D1 — gerçek tick
+    click("#run");
+    await until(() => tickLines().some(l => l.includes("tick 5")), 8000, "tick 5");
+    const seq = tickLines().map(l => +l.match(/\d+$/)[0]);
+    check("D1a: tick'ler aktı ve monoton (1..5)", seq.slice(0,5).join(",") === "1,2,3,4,5", seq.join(","));
+    check("D1b: monitör tick'i runtime değerini gösteriyor", txt("#res-timer .rtick").includes("tick 5"), txt("#res-timer .rtick"));
+
+    // D2 ⭐ — suspend tick korunumu
+    click("#suspend");                       // Duraklat
+    await until(() => txt("#console").includes("SUSPENDED"), 3000, "suspended");
+    const frozen = tickLines().length;
+    check("D2a: suspend anında tick 5'te donduruldu", txt("#console").includes("tick 5'de donduruldu"),
+          "konsol: " + txt("#console").slice(-120));
+    await sleep(3200);                       // askıda beklerken tick ARTMAMALI
+    check("D2b: askıda 3.2sn — yeni tick YOK", tickLines().length === frozen,
+          `${tickLines().length - frozen} tick sızdı`);
+    check("D2c: monitör askıda tick'i koruyor (5 ⏸)", txt("#res-timer .rtick").includes("5"), txt("#res-timer .rtick"));
+
+    click("#suspend");                       // Devam et
+    await until(() => tickLines().some(l => l.includes("tick 8")), 5000, "tick 8");
+    const seq2 = tickLines().map(l => +l.match(/\d+$/)[0]);
+    check("D2d: resume 5'ten sürdü (6,7,8 — reset yok)",
+          seq2.join(",").includes("5,6,7,8") && seq2.filter(n => n === 1).length === 1, seq2.join(","));
+    check("D2e: konsol 'tick 5'ten devam' yazdı", txt("#console").includes("tick 5'den devam") || txt("#console").includes("tick 5'ten devam"),
+          txt("#console").slice(-200));
+
+    // D3 — gerçek kapanış
+    click("#close");
+    await until(() => txt("#console").includes("4 kaynak serbest"), 4000, "close_done");
+    check("D3a: 4 kaynak DOĞRULANMIŞ ölümle temizlendi", txt("#cleanup-note").includes("4 kaynak temizlendi"), txt("#cleanup-note"));
+    check("D3b: sızıntı 0 raporu runtime'dan geldi", txt("#console").includes("sızıntı: 0"), "");
+    const afterClose = tickLines().length;
+    await sleep(3200);                       // rAF sürücüsü HÂLÂ pg_frame çağırıyor
+    check("D3c: kapanış sonrası 3.2sn mutlak sessizlik", tickLines().length === afterClose,
+          `${tickLines().length - afterClose} tick sızdı`);
+    const deadRows = [...idoc().querySelectorAll(".res.dead")].length;
+    check("D3d: monitörde 4 kaynak da ölü (gri/üstü çizili)", deadRows === 4, `dead=${deadRows}`);
+
+    // Toast — life=3s auto-close (runner kendi kapanır)
+    idoc().querySelector('[data-demo="toast"]').click();
+    click("#run");
+    await until(() => txt("#console").includes("life=3s doldu"), 6000, "auto_close");
+    await until(() => txt("#console").includes("2 kaynak serbest"), 3000, "toast close_done");
+    check("T1: toast 3sn'de KENDİ kapandı (auto_close→close_done)", true, "");
+
+    // VAYBE — seçici suspend: scope_3 donar, kardeşleri akar
+    const tickOf = id => { const m = txt("#res-" + id + " .rtick").match(/tick (\d+)/); return m ? +m[1] : 0; };
+    idoc().querySelector('[data-demo="vaybe"]').click();
+    click("#run");
+    await until(() => tickOf("s1") >= 3 && tickOf("s3") >= 3, 8000, "vaybe tick 3");
+    check("V1: üç scope da bağımsız tick atıyor", tickOf("s2") >= 2, `s2=${tickOf("s2")}`);
+    click("#suspend");                          // "Scope 3'ü Duraklat"
+    await until(() => txt("#console").includes("SUSPENDED"), 3000, "v-suspend");
+    const s3Frozen = +((txt("#res-s3 .rtick").match(/(\d+)/) || [0,0])[1]);
+    const s1Then = tickOf("s1");
+    await sleep(3200);                          // kardeşler akmaya devam etmeli
+    check("V2 ⭐: s3 DONDU, s1 AKTI (seçici suspend)",
+          txt("#res-s3 .rtick").includes(String(s3Frozen)) && tickOf("s1") >= s1Then + 2,
+          `s3='${txt("#res-s3 .rtick")}' s1 ${s1Then}→${tickOf("s1")}`);
+    check("V3: s3 satırı mavi/askıda, s1 satırı canlı",
+          idoc().querySelector("#res-s3").className.includes("suspended")
+          && idoc().querySelector("#res-s1").className.includes("live"), "");
+    click("#suspend");                          // "Scope 3'ü Uyandır"
+    await until(() => tickOf("s3") > s3Frozen, 4000, "v-resume");
+    check("V4: s3 kaldığı yerden uyandı", tickOf("s3") === s3Frozen + 1 || tickOf("s3") === s3Frozen + 2,
+          `s3=${tickOf("s3")} (donuk: ${s3Frozen})`);
+    click("#close");
+    await until(() => txt("#console").includes("3 kaynak serbest"), 4000, "v-close");
+    check("V5: üç scope da doğrulanmış ölümle kapandı", txt("#cleanup-note").includes("3 kaynak temizlendi"), txt("#cleanup-note"));
+  } catch (e) {
+    check("AKIŞ", false, e.message);
+  }
+  results.unshift(`SONUÇ: ${pass} PASS / ${fail} FAIL`);
+  logEl.textContent = results.join("\n");
+  document.title = fail ? `FAIL ${fail}` : `PASS ${pass}`;
+})();
+</script>

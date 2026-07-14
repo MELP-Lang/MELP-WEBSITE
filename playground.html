@@ -1,17 +1,17 @@
 <!--
   ============================================================
-  MELP Playground — canlı davranış şablonu
+  MELP Playground — GERÇEK WASM runtime
   ============================================================
-  YZ İÇİN NOT:
-  Görsel/UX bu dosyada bitmiştir; DOKUNMA.
-  Değiştirilecek TEK yer: aşağıdaki `MelpRuntime` objesi.
-  Şu an davranışı SİMÜLE ediyor (gerçekten tick atan timer,
-  kapanınca gerçekten susan kaynaklar). Senin işin:
-  bu objenin içindeki simülasyonu gerçek WASM call'larıyla
-  değiştirmek. Arayüz onRuntimeEvent(...) callback'i
-  dinliyor — sen sadece o callback'i gerçek WASM'dan tetikle.
-  Arayüz kodunun geri kalanı runtime'ın gerçek mi sahte mi
-  olduğunu bilmez, umursamaz.
+  PART A artık simülasyon DEĞİL: playground_runner.wasm
+  (playground_runner_wasm.mlp + shim_wasm.c, melp_compiler ile
+  derlenir — bkz. deneysel/playground/build_playground_wasm.sh).
+  Tick sayıları, suspend/resume state'i ve kapanış zinciri
+  WASM içindeki scope state machine'den gelir; JS yalnızca
+  requestAnimationFrame ile saat sağlar ve event köprüsü kurar.
+  JS tarafında tick sayacı/simülasyon timer'ı YOKTUR.
+  Doğrulama: deneysel/playground/verify_wasm.mjs (D1/D2/D3).
+  NOT: fetch() yüzünden http üzerinden servis edilmelidir:
+    python3 -m http.server --directory demos 8000
   ============================================================
 -->
 <meta charset="utf-8">
@@ -485,7 +485,7 @@
 <div class="wrap">
   <header>
     <div class="logo">🦊 MELP <b>Playground</b></div>
-    <div class="tagline">scope-bound lifetime · GC-free · <code>WASM &lt; 1KB</code></div>
+    <div class="tagline">scope-bound lifetime · GC-free · <code>WASM ~1KB + ~29KB = ~30KB total</code></div>
   </header>
 
   <div class="thesis">
@@ -500,7 +500,7 @@
       <div class="val amber" id="m-wasm">—</div>
       <div class="lab">WASM · gzip</div>
       <div class="q">?</div>
-      <div class="tip"><b>Ne dahil:</b> derlenmiş demo modülü, gzip'li. Runtime ayrı değil — MELP'in runtime'ı yok, temizlik compile-time'da kodlanır.</div>
+      <div class="tip"><b>Ne dahil:</b> Sadece derlenmiş .wasm (gzip). Sayfa toplamı ~30KB (JS köprü + HTML/CSS dahil). Runtime ayrı değil — MELP'in runtime'ı yok, temizlik compile-time'da kodlanır.</div>
     </div>
     <div class="metric">
       <div class="val" id="m-cleanup">0</div>
@@ -527,6 +527,7 @@
       <button class="dtab" role="tab" aria-selected="true"  data-demo="tab">Tab Kapat <span class="badge">4 kaynak</span></button>
       <button class="dtab" role="tab" aria-selected="false" data-demo="counter">Sayaç</button>
       <button class="dtab" role="tab" aria-selected="false" data-demo="toast">Toast <span class="badge">life=3s</span></button>
+      <button class="dtab" role="tab" aria-selected="false" data-demo="vaybe">Vaybe <span class="badge">seçici suspend</span></button>
     </div>
     <div class="spacer"></div>
     <button class="run" id="run">▶ Çalıştır</button>
@@ -573,20 +574,29 @@
 
 <script>
 /* ============================================================
-   PART A — RUNTIME ADAPTER  ⟵  YZ: SADECE BURAYI DEĞİŞTİR
+   PART A — RUNTIME ADAPTER  (GERÇEK WASM — simülasyon YOK)
    ------------------------------------------------------------
-   Arayüz bu objeyi çağırır ve onRuntimeEvent(evt) ile geri
-   bildirim bekler. Şu an davranış SİMÜLE ediliyor. Gerçek
-   WASM'a bağlarken:
-     - start(demo): WASM modülünü yükle/çalıştır, scope'ları aç
-     - stop():      aktif scope'un kapanışını tetikle
-                    (mlp_dispatch_event ile tab_close event'i)
-   ve her gerçek runtime olayında onRuntimeEvent(...) çağır.
-   Event şeması aşağıda EVENTS bölümünde. Arayüzü değiştirme.
+   Motor: playground_runner.wasm
+     = playground_runner_wasm.mlp (melp_compiler → LLVM IR)
+     + shim_wasm.c (scope state machine — native shim.c ile AYNI kod)
+   Build: deneysel/playground/build_playground_wasm.sh
+
+   İş bölümü (YZ_TALIMAT §2, "adım fonksiyonu" mimarisi):
+     - Tick SAYISI, suspend/resume STATE'i, kapanış zinciri ve
+       sızıntı sayımı → WASM içinde (C scope registry + MELP runner).
+     - JS → yalnızca SAAT DARBESİ (pg_frame(now) çağrısı; rAF +
+       heartbeat) ve event köprüsü (env.pg_emit → UI emit şeması).
+     - JS'te tick SAYACI yoktur. Kanıt: saat darbesi kesintisiz
+       akarken suspend'de tick donar (D2), close'dan sonra sonsuza
+       dek susar (D3) — sayaç JS'te olsaydı ikisi de imkânsızdı.
+       (Doğrulama: deneysel/playground/verify_wasm.mjs)
+
+   ABI: HOST_BINDING_ABI gereği tüm parametreler i64 → JS'te BigInt.
    ============================================================ */
 
 const MelpRuntime = (() => {
-  // Her demonun sahip olduğu kaynaklar (gerçek WASM'da scope ağacından gelir)
+  // Sunum verisi: kaynak adları/etiketleri (UI metinleri).
+  // Davranış burada DEĞİL — WASM'daki scope registry'de.
   const DEMOS = {
     tab: {
       title: "demo_tab_close.mlp",
@@ -616,136 +626,184 @@ const MelpRuntime = (() => {
       closeLabel: "—",
       autoClose: 3000,
     },
+    vaybe: {
+      title: "demo_vaybe.mlp",
+      resources: [
+        { id:"s1", name:"scope_1",   live:"tick atıyor", kill:"scope_1.close()" },
+        { id:"s2", name:"scope_2",   live:"tick atıyor", kill:"scope_2.close()" },
+        { id:"s3", name:"scope_3 ⭐", live:"tick atıyor", kill:"scope_3.close()" },
+      ],
+      closeLabel: "Hepsini Kapat",
+      suspendLabel: "⏸ Scope 3'ü Duraklat",
+      resumeLabel: "▶ Scope 3'ü Uyandır",
+      selective: "s3",     // suspend SADECE bu kaynağı dondurur (seçici)
+    },
   };
 
+  const DEMO_ID = { tab: 1n, counter: 2n, toast: 3n, vaybe: 4n };   // pg_start ABI (i64)
+
   let cb = () => {};
-  let active = null;      // current demo key
-  let ticks = {};         // per-resource tick counters
-  let intervals = [];     // sim timers (WASM'da gerekmez)
-  let counterVal = 0;
-  let toastRemaining = 0;
-  let suspended = false;  // ACTIVE mı SUSPENDED mı
+  let wasm = null;        // instantiate edilmiş exports
+  let active = null;      // hangi demo İSTENDİ (kaynak adı eşlemesi için)
+  let sessionFailed = false;
 
   function emit(type, payload) { cb({ type, ...payload }); }
 
-  function clearSim() { intervals.forEach(clearInterval); intervals = []; }
+  // WASM'dan gelen event'i UI şemasına çevir.
+  // kind kodları: playground_runner_wasm.mlp başlığındaki tablo.
+  function emitFromWasm(kindB, resB, nB) {
+    const kind = Number(kindB), res = Number(resB), n = Number(nB);
+    const d = DEMOS[active];
+    if (!d) return 0n;
+    const r = d.resources[res - 1];   // ordinal (1-tabanlı) → kaynak
+    // Demo değişimi sırasında eski zincirden gelen ordinal bu demoda
+    // olmayabilir — kaynak gerektiren event'leri sessizce atla.
+    if (!r && [2, 6, 7].includes(kind)) return 0n;
+    switch (kind) {
+      case 1:  emit("run_start", { demo: active, resources: d.resources.map(x => x.id) }); break;
+      case 2:  emit("resource_open", { id: r.id, name: r.name, status: r.live }); break;
+      case 3:  emit("suspend_available", {}); break;
+      case 4: {
+        if (d.selective) {
+          // Konsol taşmasın diye sadece s1 loglanır; parantez içi durum
+          // GÖLGE STATE DEĞİL — s3'ün hali her satırda registry'den okunur.
+          // (vaybe: parent 400, s3 = scope 403)
+          let logline = null;
+          if (r.id === "s1") {
+            const s3Donuk = wasm && wasm.melp_scope_get_state(403n) === 1n;
+            logline = s3Donuk
+              ? `s1 tick ${n} · s2 akıyor · s3 hâlâ ${Number(wasm.melp_scope_get_tick(403n))}'te donuk ⏸`
+              : `s1 tick ${n} (s2/s3 monitörde)`;
+          }
+          emit("tick", { id: r.id, n, label: `tick ${n}`, log: logline });
+        }
+        else if (d.autoClose) emit("tick", { id: "timer", n, label: `${(n/1000).toFixed(1)}s` });
+        else if (d.counter)   emit("tick", { id: "state", n, label: `değer = ${n}` });
+        else                  emit("tick", { id: "timer", n, label: `tick ${n}` });
+        break;
+      }
+      case 5:  if (!d.autoClose) emit("close_start", {}); break;  // toast: sim şemasında close_start yok (auto_close var)
+      case 6:  emit("resource_cleaning", { id: r.id, action: r.kill }); break;
+      case 7:  emit("resource_dead", { id: r.id }); break;
+      case 8: {
+        // res = DOĞRULANMIŞ ölü kaynak sayısı, n = registry leak sayısı.
+        // "sızıntı: 0" ancak runtime böyle raporlarsa ekrana çıkar.
+        if (n === 0 && res === d.resources.length && !sessionFailed) {
+          emit("close_done", { count: res });
+        } else {
+          console.error(`[MELP] KAPANIŞ DOĞRULAMASI BAŞARISIZ: ölü=${res}/${d.resources.length} leak=${n}`);
+        }
+        break;
+      }
+      case 9:  emit("auto_close", { reason: "life=3s doldu" }); break;
+      // res>0 → SEÇİCİ suspend/resume (vaybe): yalnızca o kaynak donar,
+      // kardeşleri akmaya devam eder. only/who alanları UI'ye iletilir.
+      case 10: emit("scope_suspended", { tick_n: n,
+                 only: res > 0 && r ? r.id : null, who: res > 0 && r ? r.name : null }); break;
+      case 11: emit("scope_resumed", { tick_n: n,
+                 only: res > 0 && r ? r.id : null, who: res > 0 && r ? r.name : null }); break;
+      case 12:
+        sessionFailed = true;
+        console.error(`[MELP] KAYNAK DOĞRULAMASI BAŞARISIZ: res=${res} state=${n}`);
+        break;
+      case 13: emit("scope_event", { scope_id: res, event_kind: n }); break;  // PD_PLAYGROUND #1: DOM→MELP
+    }
+    return 0n;  // pg_emit i64 döndürür (ABI)
+  }
 
-  // --- PUBLIC API (arayüzün gördüğü yüzey) ---
+  // --- WASM yükleme + saat sürücüsü ---
+  // pg_frame(now) sadece "şu an kaç" der; tick'e karar veren ve
+  // sayan RUNNER'dır (SUSPENDED/CLOSED ise saymaz). Sürücü çift
+  // kanallı: rAF (görünür sekmede akıcı) + 50ms heartbeat (rAF'ın
+  // durduğu ortamlar). Saat HEP çalışır — kapanıştan SONRA da:
+  // kapalı scope'un bir daha tick ATAMADIĞININ canlı kanıtı (D3).
+  const ready = (async () => {
+    const bytes = await fetch("playground_runner.wasm").then(r => {
+      if (!r.ok) throw new Error(`playground_runner.wasm: HTTP ${r.status}`);
+      return r.arrayBuffer();
+    });
+    const { instance } = await WebAssembly.instantiate(bytes, {
+      env: { pg_emit: emitFromWasm }
+    });
+    wasm = instance.exports;
+
+    const pulse = () => wasm.pg_frame(BigInt(Date.now()));
+    (function drive() { pulse(); requestAnimationFrame(drive); })();
+    setInterval(pulse, 50);   // saat darbesi — tick SAYISI wasm'da
+
+    // WASM boyut metriği — sabit değer DEĞİL, indirilen byte'lardan
+    // tarayıcıda gzip'lenerek ölçülür. Modül self-contained:
+    // demo + scope state machine tek .wasm, ayrı runtime dosyası yok.
+    try {
+      const gz = await new Response(
+        new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"))
+      ).arrayBuffer();
+      document.querySelector("#m-wasm").textContent = (gz.byteLength / 1024).toFixed(1) + "KB";
+    } catch {
+      document.querySelector("#m-wasm").textContent = (bytes.byteLength / 1024).toFixed(1) + "KB (ham)";
+    }
+    return wasm;
+  })();
+  ready.catch(err => {
+    console.error("[MELP] WASM yüklenemedi:", err);
+    document.querySelector("#console").textContent =
+      "❌ playground_runner.wasm yüklenemedi: " + err.message +
+      "\n   http üzerinden servis edin: python3 -m http.server --directory demos 8000" +
+      "\n   build: deneysel/playground/build_playground_wasm.sh";
+  });
+
+  // --- PUBLIC API (arayüzün gördüğü yüzey — şema DEĞİŞMEDİ) ---
   return {
     demos: DEMOS,
     onEvent(fn) { cb = fn; },
 
-    // Bir demoyu başlat: scope'ları aç, kaynakları canlandır
+    // Demoyu başlat: WASM parent + çocuk scope'ları GERÇEKTEN açar;
+    // her resource_open, melp_scope_open sonrası runner'dan gelir.
     start(demo) {
-      clearSim();
       active = demo;
-      const d = DEMOS[demo];
-      ticks = {}; d.resources.forEach(r => ticks[r.id] = 0);
-      counterVal = 0;
-
-      emit("run_start", { demo, resources: d.resources.map(r => r.id) });
-      suspended = false;
-
-      // Her kaynağı "açıldı → canlı" olarak bildir (top-down open sırası)
-      d.resources.forEach((r, i) => {
-        setTimeout(() => emit("resource_open", { id:r.id, name:r.name, status:r.live }), 90 * (i+1));
-      });
-
-      // Bu demo suspend destekliyor mu? (autoClose olanlar desteklemez)
-      if (!d.autoClose) {
-        setTimeout(() => emit("suspend_available", {}), 90 * (d.resources.length + 1));
-      }
-
-      startTicking(d);
+      sessionFailed = false;
+      ready.then(() => wasm.pg_start(DEMO_ID[demo], BigInt(Date.now())));
     },
 
-    // Aktif scope'u kapat: kapanış zinciri (gerçek WASM'da tab_close event'i)
+    // Kapanış zinciri: WASM pg_close → bottom-up melp_scope_close
+    // + her kaynak için ölüm DOĞRULAMASI. Event'ler zincirden gelir.
     stop() {
-      if (!active) return;
-      const d = DEMOS[active];
-      if (d.autoClose) return; // toast kendi kapanır
-      clearSim();
-      suspended = false;
-      emit("close_start", {});
-      closeAll(d);
+      if (!wasm || !active) return;
+      if (DEMOS[active].autoClose) return; // toast kendi kapanır (life=3s)
+      wasm.pg_close();
     },
 
-    // Aktif scope'u askıya al: ACTIVE → SUSPENDED
-    // Timer'lar durur AMA hiçbir kaynak ölmez, state korunur.
+    // ACTIVE → SUSPENDED: gerçek melp_scope_suspend. Tick sayacı
+    // WASM registry'de KORUNUR — JS hiçbir şey saklamaz.
     suspend() {
-      if (!active || suspended) return;
-      const d = DEMOS[active];
-      if (d.autoClose) return; // toast suspend edilemez
-      clearSim();              // tick döngüleri durur — ama ticks{} sayaçları KORUNUR
-      suspended = true;
-      // O anki tick değeri (timer varsa timer, yoksa counter)
-      const tickN = d.counter ? counterVal : (ticks.timer || 0);
-      emit("scope_suspended", { tick_n: tickN });
+      if (!wasm || !active) return;
+      if (DEMOS[active].autoClose) return; // toast suspend edilemez
+      wasm.pg_suspend();
     },
 
-    // Askıdan çıkar: SUSPENDED → ACTIVE. Sayaçlar kaldığı yerden sürer.
+    // SUSPENDED → ACTIVE: gerçek melp_scope_resume. Tick kaldığı
+    // yerden sürer (scope_resumed.tick_n registry'den okunur).
     resume() {
-      if (!active || !suspended) return;
-      const d = DEMOS[active];
-      suspended = false;
-      const tickN = d.counter ? counterVal : (ticks.timer || 0);
-      emit("scope_resumed", { tick_n: tickN });
-      startTicking(d);         // kaldığı yerden devam — ticks{} sıfırlanmadı
+      if (!wasm || !active) return;
+      wasm.pg_resume(BigInt(Date.now()));
     },
 
-    isRunning() { return intervals.length > 0 || suspended; },
-    isSuspended() { return suspended; },
+    // Durum sorguları: JS'te gölge state YOK — WASM'dan okunur.
+    isRunning()   { return !!wasm && wasm.pg_running() === 1n; },
+    isSuspended() { return !!wasm && wasm.pg_is_suspended() === 1n; },
     current() { return active; },
+
+    // PD_PLAYGROUND #1: DOM→MELP event bridge
+    // Kullanıcı etkileşimini WASM scope state machine'ine iletir.
+    // Örn: API.dispatchEvent(401, 1, 0) → onClick event'i scope 401'e gönderir.
+    dispatchEvent(scopeId, eventKind, payload = 0) {
+      if (!wasm) return -1;
+      return wasm.melp_dispatch_event(BigInt(scopeId), BigInt(eventKind), BigInt(payload));
+    },
+
+    // Bekleyen event sayısı (debug/test için)
+    pendingEvents() { return wasm ? Number(wasm.pg_dispatch_count()) : 0; },
   };
-
-  // Tick döngülerini başlat (start ve resume ortak kullanır).
-  // ticks{}/counterVal sıfırlanmaz — resume'da kaldığı yerden sürsün diye.
-  function startTicking(d) {
-    const hasTimer = d.resources.some(r => r.id === "timer");
-    if (hasTimer && !d.autoClose) {
-      const iv = setInterval(() => {
-        ticks.timer++;
-        emit("tick", { id:"timer", n:ticks.timer, label:`tick ${ticks.timer}` });
-      }, 1000);
-      intervals.push(iv);
-    }
-    if (d.counter) {
-      const iv = setInterval(() => {
-        counterVal++;
-        ticks.state = counterVal;
-        emit("tick", { id:"state", n:counterVal, label:`değer = ${counterVal}` });
-      }, 900);
-      intervals.push(iv);
-    }
-    if (d.autoClose) {
-      toastRemaining = (toastRemaining || d.autoClose);
-      const iv = setInterval(() => {
-        toastRemaining -= 100;
-        const s = (toastRemaining/1000).toFixed(1);
-        emit("tick", { id:"timer", n:toastRemaining, label:`${s}s` });
-        if (toastRemaining <= 0) {
-          clearSim();
-          emit("auto_close", { reason:"life=3s doldu" });
-          closeAll(d);
-        }
-      }, 100);
-      intervals.push(iv);
-    }
-  }
-
-  // Kapanış zinciri: bottom-up, her kaynak tek tek temizlenir
-  function closeAll(d) {
-    const order = [...d.resources].reverse(); // bottom-up
-    order.forEach((r, i) => {
-      setTimeout(() => {
-        emit("resource_cleaning", { id:r.id, action:r.kill });
-        setTimeout(() => emit("resource_dead", { id:r.id }), 260);
-      }, 300 * i);
-    });
-    setTimeout(() => emit("close_done", {
-      count: d.resources.length
-    }), 300 * order.length + 300);
-  }
 })();
 
 /* ============================================================
@@ -797,6 +855,18 @@ const SOURCES = {
 <span class="kw">end scope</span>
 <span class="com">-- 3s sonra: widget + state + timer OTOMATİK gider</span>
 <span class="com">-- kapatma kodu YAZILMAZ</span>`,
+
+  vaybe: `<span class="com">-- SEÇİCİ SUSPEND: 3 kardeş scope'tan SADECE biri</span>
+<span class="com">-- dondurulur — diğerleri AKMAYA DEVAM EDER.</span>
+
+<span class="kw">scope</span> <span class="sc">Scope_1</span>  <span class="com">-- tick atıyor</span>
+<span class="kw">scope</span> <span class="sc">Scope_2</span>  <span class="com">-- tick atıyor</span>
+<span class="kw">scope</span> <span class="sc">Scope_3</span>  <span class="com">-- tick atıyor ⭐</span>
+
+<span class="fn">suspend</span>(<span class="sc">Scope_3</span>)  <span class="com">-- zamanda hapis</span>
+<span class="com">-- Scope_3: tick DONAR, state KORUNUR (ölmedi!)</span>
+<span class="com">-- Scope_1-2: hiç etkilenmez, saymaya devam</span>
+<span class="com">-- MELP = öldürmeden durdur. Sistem devam etsin.</span>`,
 };
 
 const REACT_SOURCES = {
@@ -824,9 +894,21 @@ useEffect(() =&gt; {
   const t = setTimeout(() =&gt; setShow(false), 3000);
   return () =&gt; <span class="hl">clearTimeout(t);</span> <span class="com">// unmount olursa sızıntı</span>
 }, []);`,
+  vaybe: `<span class="com">// React'ta bir alt ağacı "duraklatmak" için</span>
+<span class="com">// her effect'e ELLE bayrak dokuman gerekir:</span>
+const pausedRef = useRef(false);
+useEffect(() =&gt; {
+  const t = setInterval(() =&gt; {
+    <span class="hl">if (pausedRef.current) return;</span> <span class="com">// her timer'a…</span>
+    tick();
+  }, 1000);
+  return () =&gt; clearInterval(t);
+}, []);
+<span class="com">// …ve bunu HER kaynağa tek tek yazarsın.</span>
+<span class="com">// Bayrağı unutan kaynak "donmuş" sanılırken çalışır.</span>`,
 };
 
-const REACT_COUNTS = { tab: "4 manuel cleanup", counter: "1 manuel cleanup", toast: "1 manuel cleanup" };
+const REACT_COUNTS = { tab: "4 manuel cleanup", counter: "1 manuel cleanup", toast: "1 manuel cleanup", vaybe: "her effect'e elle bayrak" };
 
 /* ---- console helpers ---- */
 function log(text, cls="") {
@@ -914,26 +996,31 @@ MelpRuntime.onEvent(evt => {
     case "scope_suspended": {
       // TÜM kaynaklar askıya alınır (sadece timer değil) — scope bütün olarak donar
       const d = MelpRuntime.demos[currentDemo];
-      d.resources.forEach(r => {
+      // evt.only varsa SEÇİCİ suspend: yalnızca o kaynak donar,
+      // kardeşleri canlı kalır (vaybe). Yoksa eski davranış: hepsi.
+      const hedefler = evt.only ? d.resources.filter(r => r.id === evt.only) : d.resources;
+      hedefler.forEach(r => {
         const row = $("#res-" + r.id);
         const curTick = row ? row.querySelector(".rtick").textContent.replace("↻","").trim() : "";
         setRes(r.id, { cls:"suspended", stat:"askıda — korunuyor",
                        tick: curTick && curTick !== "—" ? curTick + " ⏸" : "askıda" });
       });
       log(``);
-      log(`⏸ scope SUSPENDED — tick ${evt.tick_n}'de donduruldu`, "t-susp");
-      log(`  kaynaklar DİRİ, state korunuyor · hiçbiri ölmedi`, "t-susp");
+      log(`⏸ ${evt.who || "scope"} SUSPENDED — tick ${evt.tick_n}'de donduruldu`, "t-susp");
+      log(evt.only ? `  SADECE o dondu — kardeşleri saymaya DEVAM EDİYOR` :
+                     `  kaynaklar DİRİ, state korunuyor · hiçbiri ölmedi`, "t-susp");
       break;
     }
 
     case "scope_resumed": {
       const d = MelpRuntime.demos[currentDemo];
-      d.resources.forEach(r => {
+      const hedefler = evt.only ? d.resources.filter(r => r.id === evt.only) : d.resources;
+      hedefler.forEach(r => {
         setRes(r.id, { cls:"live", stat:r.id==="timer"?"tick atıyor":
                        (MelpRuntime.demos[currentDemo].resources.find(x=>x.id===r.id)||{}).live || "canlı",
                        tick:"canlı" });
       });
-      log(`▶ scope RESUMED — tick ${evt.tick_n}'den devam ediyor`, "t-live");
+      log(`▶ ${evt.who || "scope"} RESUMED — tick ${evt.tick_n}'den devam ediyor`, "t-live");
       break;
     }
 
@@ -941,7 +1028,9 @@ MelpRuntime.onEvent(evt => {
       const t = MelpRuntime.demos[currentDemo].autoClose ? evt.label : `↻ ${evt.label}`;
       setRes(evt.id, { tick: t });
       // only log occasionally to avoid flooding
-      if (evt.id === "timer" && !MelpRuntime.demos[currentDemo].autoClose) {
+      if (evt.log) {
+        log(`  ↻ ${evt.log}`, "t-tick");   // adapter'ın seçtiği satır (vaybe)
+      } else if (evt.id === "timer" && !MelpRuntime.demos[currentDemo].autoClose) {
         log(`  ↻ timer ${evt.label}`, "t-tick");
       } else if (MelpRuntime.demos[currentDemo].counter && evt.id==="state") {
         log(`  ↻ ${evt.label}`, "t-tick");
@@ -1003,14 +1092,14 @@ function setButtons(state) {
     case "running":
       runBtn.hidden = true;
       suspendBtn.hidden = !supportsSuspend;
-      suspendBtn.textContent = "⏸ Duraklat";
+      suspendBtn.textContent = d.suspendLabel || "⏸ Duraklat";
       closeBtn.hidden = d.autoClose;   // toast kendi kapanır, kapat butonu yok
       closeBtn.textContent = "✕ " + (d.closeLabel === "—" ? "Kapat" : d.closeLabel);
       break;
     case "suspended":
       runBtn.hidden = true;
       suspendBtn.hidden = false;
-      suspendBtn.textContent = "▶ Devam et";
+      suspendBtn.textContent = d.resumeLabel || "▶ Devam et";
       closeBtn.hidden = false;
       break;
     case "closed":
@@ -1062,8 +1151,9 @@ document.querySelectorAll(".dtab").forEach(tab => {
   });
 });
 
-/* ---- WASM size metric (YZ: gerçek gzip boyutunu buraya yaz) ---- */
-$("#m-wasm").textContent = "0.8KB";
+/* ---- WASM size metric: PART A'da gerçek ölçümle set edilir ----
+   (indirilen playground_runner.wasm byte'ları CompressionStream ile
+   gzip'lenir — sabit değer YOK) ---- */
 
 /* ---- paper link placeholder ---- */
 $("#paper-link").addEventListener("click", e => {
