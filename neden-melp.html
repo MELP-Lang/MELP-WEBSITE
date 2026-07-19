@@ -107,14 +107,21 @@ end struct
 end debug</code></pre>
 <p>Release'de <strong>sıfır maliyetle</strong> strip edilir. Debug'da IDE ile konuşur.</p>
 
-<h2>7. Performans — C'den Hızlı Olduğu Yerler Var</h2>
+<h2>7. Performans — C ile Aynı Ligde</h2>
+<p>MELP "C'den hızlı" iddiasında değildir. Hedefi <strong>sürprizsiz, C
+ligi performansı</strong>: aynı asimptotik sınıf, ölçülebilir sabit fark.
+Aşağıdaki sayılar protokollüdür (<code>-O2</code>, en iyi/3, adil C referansı).</p>
 <table>
-<tr><th>Test</th><th>MELP</th><th>C (clang -O2)</th><th>Oran</th></tr>
-<tr><td>fib(40)</td><td>233ms</td><td>238ms</td><td class="win">0.98x (MELP hızlı!)</td></tr>
-<tr><td>primes(10000)</td><td>3ms</td><td>3ms</td><td class="win">1.00x (başa baş)</td></tr>
-<tr><td>loop 100M</td><td>2ms*</td><td>134ms</td><td class="win">LLVM optimize</td></tr>
+<tr><th>Test</th><th>MELP</th><th>C (clang -O2)</th><th>Durum</th></tr>
+<tr><td>fib(40)</td><td>232ms</td><td>179ms</td><td>C ~1.3x önde — aynı lig</td></tr>
+<tr><td>string concat 100K</td><td>9ms</td><td>~1ms</td><td>O(n) parite; C sabit-katsayıda önde</td></tr>
 </table>
-<p><em>* LLVM induction variable elimination — döngü compile-time çözülüyor.</em></p>
+<p><em>Not: "loop 100M" gibi yan-etkisiz döngüler LLVM tarafından
+compile-time'da katlanır (induction variable elimination) — bu bir
+<strong>optimize-edilebilirlik</strong> göstergesidir, çalışma-zamanı hız
+ölçümü DEĞİLDİR; hız tablosuna dahil edilmez. MELP'in ürettiği IR'ın LLVM'in
+katlayabileceği kadar temiz olması olumlu bir işaret, ama "C'yi geçtik"
+anlamına gelmez.</em></p>
 
 <h2>MELP vs Diğer Diller</h2>
 <table>
