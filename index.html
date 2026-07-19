@@ -118,7 +118,68 @@
         </table>
       </div>
       <p class="muted" style="text-align:center;margin-top:1rem;font-style:italic;">
-        "MELP stateless-first mimarisiyle memory güvenliğini ne GC ne de borrow checker gerektirmeden sağlar."
+        "MELP bellek güvenliğini scope modeliyle sağlar — ne GC ne de borrow checker gerektirmeden."
+      </p>
+    </section>
+
+    <!-- ========== DÜRÜST HARİTA: NE VAR, NE YOK ========== -->
+    <section>
+      <div class="section-header">
+        <span class="section-label">Dürüst Harita</span>
+        <h2>Ne Çözdük, Neyi Henüz Çözmedik</h2>
+        <p>Yazılımın kronik yaraları ve MELP'in bugünkü cevapları — eksikler dahil.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Yara</th>
+              <th>MELP'in cevabı</th>
+              <th>Durum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Bellek güvenliği</td>
+              <td>Scope/custody: GC'siz, işaretsiz, otomatik</td>
+              <td><span class="check">✅</span></td>
+            </tr>
+            <tr>
+              <td>Kurumsal hafıza kaybı</td>
+              <td><code>debug</code> bloğu — geleceğe mektup, koşulunca durur</td>
+              <td><span class="check">✅</span></td>
+            </tr>
+            <tr>
+              <td>Sessiz yanlış</td>
+              <td>Runtime'a tahmin bırakılmaz; hata kodları + çıkış disiplini</td>
+              <td><span class="check">✅</span></td>
+            </tr>
+            <tr>
+              <td>State karmaşası</td>
+              <td>State'in ayrı hayatı yok — veri scope'unun ömrünü yaşar</td>
+              <td>🔬</td>
+            </tr>
+            <tr>
+              <td>Eşzamanlılık</td>
+              <td>Scope izolasyonu, mutex'siz mesajlaşma</td>
+              <td>🔬</td>
+            </tr>
+            <tr>
+              <td>Tedarik zinciri güvenliği</td>
+              <td>Cevabımız <strong>yok</strong> — modül sistemi emekleme aşamasında</td>
+              <td><span class="cross">❌</span></td>
+            </tr>
+            <tr>
+              <td>Araç zinciri konforu</td>
+              <td>Zayıf karnımız — editör, hata ayıklayıcı, paket araçları genç</td>
+              <td><span class="cross">❌</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted" style="text-align:center;margin-top:1rem;font-size:0.85rem;">
+        ✅ kanıtlı &nbsp;·&nbsp; 🔬 kısmî &nbsp;·&nbsp; ❌ henüz yok &nbsp;—&nbsp;
+        kaynak: <code>MELP_KANONİK/OZGUN_OZELLIKLER.md</code>
       </p>
     </section>
 
@@ -150,9 +211,9 @@
           <div class="card-icon">⚡</div>
           <h3>LLVM Native Binary</h3>
           <p>
-            GC yok, overhead yok. MELP doğrudan LLVM IR üretir —
-            C/C++ ile eşdeğer native hız. Sözdizimsel bir deney değil,
-            üretim kalitesinde bir derleyici.
+            GC yok, overhead yok. MELP doğrudan LLVM IR üretir ve C ile aynı
+            ligde koşar — sürprizsiz, ölçülebilir performans. Sözdizimsel bir
+            deney değil, kendi kaynağını derleyen bir derleyici.
           </p>
         </div>
       </div>
