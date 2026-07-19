@@ -16,7 +16,7 @@
 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Örnekler — MELP</title>
+<title>Canlı Demo — MELP</title>
 
 <style>
   :root {
@@ -484,12 +484,17 @@
 
 <div class="wrap">
   <header>
-    <div class="logo">🦊 MELP <b>Örnekler</b></div>
+    <div class="logo">🦊 MELP <b>Canlı Demo</b></div>
     <div class="tagline">scope-bound lifetime · GC-free · <code>WASM ~1KB + ~29KB = ~30KB total</code></div>
-    <div style="margin-top:10px;font-size:13px;">
-      <a href="index.html" style="color:#8bd5ff;text-decoration:none;">← melp.dev</a>
+    <div style="flex-basis:100%;margin-top:8px;font-size:13px;color:var(--ink-dim);line-height:1.55;">
+      Bu senaryolar gerçek MELP WASM derleyicisiyle tarayıcında koşuyor —
+      <b style="color:var(--good);">simülasyon değil</b>. Tick sayıları, freeze durumu ve
+      kapanış raporu WASM içindeki scope state machine'den gelir; JS yalnızca saat sağlar.
+    </div>
+    <div style="flex-basis:100%;margin-top:10px;font-size:13px;">
+      <a href="index.html" style="color:var(--accent);text-decoration:none;">← melp.dev</a>
       &nbsp;·&nbsp;
-      <a href="./web-ide/" style="color:#8bd5ff;text-decoration:none;">Kendi kodunu yaz → Web IDE</a>
+      <a href="./web-ide/" style="color:var(--accent);text-decoration:none;">Kendi kodunu yaz → Web IDE</a>
     </div>
   </header>
 
