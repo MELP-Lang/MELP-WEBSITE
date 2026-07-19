@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MELP özellikleri — Çok dilli yazım, EOK binary güvenliği, LLVM native, spawn/channel, öz-derleme hedefi.">
+  <meta name="description" content="MELP özellikleri — Çok dilli yazım, scope tabanlı bellek güvenliği, LLVM native, spawn/channel, self-hosting.">
   <title>Özellikler — MELP</title>
   <link rel="shortcut icon" type="image/x-icon" href="/assets/MELP_logo_1.ico">
   <link rel="icon" type="image/png" href="/assets/MELP_logo.png">
@@ -179,89 +179,6 @@
     </section>
 
     <!-- ====================================================
-         3. EOK — EN ÖNEMLİ BÖLÜM
-         ==================================================== -->
-    <section class="feature-section">
-      <h2>🔐 3. Yapısal Binary Güvenliği — EOK <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">Beta</span></h2>
-      <p style="font-size:1.1rem;font-weight:600;color:var(--text-primary);margin-bottom:1.5rem;">
-        Binary'e sahip olmak, mantığa sahip olmak anlamına gelmez.
-      </p>
-      <p>
-        Klasik derleyiciler kaynak kodunun sembolik yapısını (fonksiyon adları, kontrol akışı,
-        sabit değerler) binary içinde korur. IDA Pro, Ghidra veya benzeri bir araç bu binary'i
-        açtığında programın mantığı büyük ölçüde okunabilir.
-      </p>
-      <p>
-        MELP farklı çalışır. EOK (Encryptic OK) mimarisinde binary, gerçek semboller
-        yerine yalnızca indeks numaraları içerir. Bu indekslerin anlam tablosuna — "anahtar"a —
-        sahip olmadan binary çalıştırılamaz, tersine mühendislik yapılamaz.
-      </p>
-
-      <div class="eok-box">
-        <div style="margin-bottom:0.75rem;"><span class="label-red">❌ Klasik binary:</span></div>
-        <div style="margin-left:1rem;">
-          Kaynak → [<span class="label-red">fonksiyon adları + veri + kontrol akışı</span>] → IDA Pro ile okunabilir
-        </div>
-        <div style="margin:1rem 0 0.75rem;"><span class="label-green">✅ MELP binary (EOK):</span></div>
-        <div style="margin-left:1rem;">
-          Kaynak → [<span class="label-blue">sadece indeks numaraları</span>] → anahtarsız = <strong>anlamsız</strong>
-        </div>
-      </div>
-
-      <h3 style="margin-top:2rem;">Saldırı Senaryoları</h3>
-
-      <div class="table-wrap">
-        <table class="attack-table">
-          <thead>
-            <tr>
-              <th style="text-align:left;">Saldırı</th>
-              <th style="text-align:left;">Sonuç</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Binary ele geçirildi, anahtar yok</td>
-              <td>Yürütülemez</td>
-            </tr>
-            <tr>
-              <td>Memory dump (çalışırken)</td>
-              <td>Bellekte yalnızca indeksler — veri okunaksız</td>
-            </tr>
-            <tr>
-              <td>IDA Pro / Ghidra analizi</td>
-              <td>Kontrol akışı ve semboller okunaksız</td>
-            </tr>
-            <tr>
-              <td>Binary kopyalanıp farklı ortamda çalıştırıldı</td>
-              <td>Anahtar eşleşmediği için başlatılamaz</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="info-box" style="margin-top:2rem;">
-        <p>
-          <strong>Hedef Kitle:</strong> Savunma sanayi, bankacılık ve kritik altyapı yazılımları
-          için tasarlanmıştır. Fikri mülkiyet koruması iş modelinin merkezinde olan kuruluşlar
-          için EOK doğrudan bir değer önerisidir.
-        </p>
-      </div>
-
-      <h3 style="margin-top:2.5rem;">EFBO — Kuantum Dirençli Koruma <span class="badge badge-yellow" style="font-size:0.75rem;vertical-align:middle;">Araştırma</span></h3>
-      <p>
-        EOK'un üzerine inşa edilen EFBO (Encrypted FBO), post-quantum şifreleme yöntemleriyle
-        FBO dispatch tablosunu korumayı hedefler. Klasik şifreleme algoritmalarının kuantum
-        bilgisayarlar karşısında kırılgan olacağı varsayımına karşı proaktif bir mimari yanıttır.
-      </p>
-      <div class="info-box research">
-        <p>
-          <strong>Durum:</strong> EFBO aktif araştırma aşamasındadır. Beta sonrası yol haritasında
-          yer almaktadır — mevcut EOK koruması bundan bağımsız olarak çalışır.
-        </p>
-      </div>
-    </section>
-
-    <!-- ====================================================
          4. LLVM NATIVE BINARY
          ==================================================== -->
     <section class="feature-section">
@@ -343,7 +260,6 @@ melp_compiler ornek.mlp -o a.out
       <div class="info-box">
         <p>
           32-bit indeks alanı: <strong>4.294.967.296</strong> giriş kapasitesi.
-          EOK güvenlik katmanının ve ROK çalışma zamanı optimizasyonunun matematiksel temelidir.
           Erişim O(1) L1 cache hit; performans maliyeti neredeyse sıfıra yakındır.
         </p>
       </div>
@@ -554,9 +470,10 @@ melp_compiler ornek.mlp -o a.out
       </p>
       <div class="info-box">
         <p>
-          <strong>Tasarım İlkesi:</strong> Modüller arasında doğrudan state paylaşımı yoktur.
-          İletişim FBO indeksleri üzerinden gerçekleşir; bu mimari EOK güvenliğini ve
-          stateless-first felsefesini pekiştirir.
+          <strong>Tasarım İlkesi:</strong> Modüller birbirinin değişkenlerine doğrudan yazamaz —
+          scope sınırı izolasyon sınırıdır. Paylaşım yalnızca üç kontrollü kapıdan geçer:
+          <code class="inline">tunnel</code> (geçici velayet), <code class="inline">peek</code>
+          (salt-okunur kopya), <code class="inline">channel</code> (mesaj kopyası).
         </p>
       </div>
     </section>
