@@ -406,14 +406,56 @@ melp_compiler ornek.mlp -o a.out
       <div class="code-panel" style="max-width:520px;">
         <div class="code-panel-header"><span class="lang-dot"></span>MELP — Scope</div>
         <pre><code><span class="kw">scope</span> islem
-    <span class="kw">for</span> i = 0 <span class="kw">to</span> 100
-        <span class="kw">for</span> j = 0 <span class="kw">to</span> 100
+    <span class="kw">loop each</span> i <span class="kw">in</span> satirlar
+        <span class="kw">loop each</span> j <span class="kw">in</span> sutunlar
             <span class="kw">if</span> bul(i; j) <span class="kw">then</span>
-                <span class="kw">exit scope</span> islem  <span class="cm">-- iç içe döngüden temiz çıkış</span>
+                <span class="kw">exit</span> islem  <span class="cm">-- iç içe döngüden temiz çıkış</span>
             <span class="kw">end if</span>
-        <span class="kw">end for</span>
-    <span class="kw">end for</span>
+        <span class="kw">end loop</span>
+    <span class="kw">end loop</span>
 <span class="kw">end scope</span></code></pre>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         10. GUI = SCOPE AĞACI
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>🎨 10. Arayüz Bir Çizimdir — GUI = Scope Ağacı <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">🔬 Kısmî</span></h2>
+      <p>
+        Çoğu dilde arayüz ayrı bir dille yazılır: XML, QML, HTML, JSX. MELP'te
+        arayüz dilin kendi scope'larıyla tanımlanır — çünkü ikisi yapısal olarak
+        aynı şeydir. <code class="inline">&lt;a&gt;&lt;b/&gt;&lt;/a&gt;</code> ile
+        <code class="inline">scope a … end a</code> arasındaki eşleme birebirdir:
+        eleman = scope, iç içelik = sahiplik, kapanış etiketi = isim yankısı,
+        id = scope adı, attribute = özellik.
+      </p>
+      <p>
+        Bunun pratik sonucu şu: <strong>arayüzünüzü çizerek tasarlarsınız.</strong>
+        Bir tasarım aracında (Figma vb.) çizip SVG olarak dışa aktarırsınız;
+        katman adları scope adlarına karşılık gelir, siz de davranışı MELP'te
+        yazarsınız. Widget ağacı = scope ağacı olduğu için "çocuk ebeveyniyle
+        birlikte ölür" kuralı arayüzde de aynen geçerlidir.
+      </p>
+      <div class="info-box">
+        <p>
+          <strong>Bugün nerede:</strong> MELP editör eklentisinde bir SVG designer
+          ve <code class="inline">.svge</code> formatı çalışıyor — widget'ları
+          (label, textbox, combobox, checkbox, buton) tanıyor ve bunlara bağlı
+          MELP olay işleyicisi <em>iskeleti</em> üretiyor.
+        </p>
+      </div>
+      <div class="info-box" style="margin-top:0.75rem;">
+        <p>
+          <strong>Dürüstlük satırı:</strong> Çalışan kısım designer ve
+          <code class="inline">.svge</code> → MELP iskelet üretimidir. "Çizimden
+          tek tıkla çalışan uygulama" akışı <strong>henüz yoktur</strong> —
+          üretilen iskeletin gövdesini bugün siz yazarsınız. Tarayıcıda SVG
+          projeksiyon ve GUI'nin dil sözdizimine tam gömülmesi geliştirme
+          aşamasındadır. En yakın akrabalar QML/SwiftUI/Flutter'dır; farkımız
+          arayüzün ayrı bir DSL değil, dilin bellek ve yaşam modelinin doğal
+          uzantısı olmasıdır.
+        </p>
       </div>
     </section>
 
@@ -421,7 +463,7 @@ melp_compiler ornek.mlp -o a.out
          13. STRUCT + FONKSİYON
          ==================================================== -->
     <section class="feature-section">
-      <h2>🧱 10. Struct + Fonksiyon — Class Yok</h2>
+      <h2>🧱 11. Struct + Fonksiyon — Class Yok</h2>
       <p>
         MELP'te veri <code class="inline">struct</code> ile, davranış bağımsız fonksiyonlarla tanımlanır.
         OOP hiyerarşisi olmadan aynı modelleme gücü, çok daha az karmaşıklık.
@@ -451,7 +493,7 @@ melp_compiler ornek.mlp -o a.out
          10. MODÜLER MİMARİ
          ==================================================== -->
     <section class="feature-section">
-      <h2>🗂️ 11. Modüler Mimari</h2>
+      <h2>🗂️ 12. Modüler Mimari</h2>
       <p>
         Her modül tek sorumluluğa sahiptir; merkezi orkestratör yasaktır.
         Derleme sırası otomatik dependency graph'tan belirlenir — döngüsel bağımlılık
@@ -471,7 +513,7 @@ melp_compiler ornek.mlp -o a.out
          11. PLATFORM BAĞIMSIZ
          ==================================================== -->
     <section class="feature-section">
-      <h2>🌐 12. Platform Bağımsız <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">🔬 Kısmî</span></h2>
+      <h2>🌐 13. Platform Bağımsız <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">🔬 Kısmî</span></h2>
       <p>
         Bir kere yaz, her yerde çalıştır. LLVM altyapısı sayesinde aynı kaynak kod
         Linux, macOS ve Windows için native binary üretir. Çapraz derleme için ayrı araç gerekmez.
@@ -488,7 +530,7 @@ melp_compiler ornek.mlp -o a.out
          12. ÖZ-DERLEME HEDEFİ
          ==================================================== -->
     <section class="feature-section">
-      <h2>🎯 13. Self-Hosting — Derleyici Kendini Derler</h2>
+      <h2>🎯 14. Self-Hosting — Derleyici Kendini Derler</h2>
       <p>
         MELP derleyicisi MELP ile yazılmıştır ve kendi kaynağını derler.
         "Self-hosting" denen bu eşik, bir dilin olgunluk göstergesidir ve
@@ -524,7 +566,7 @@ melp_compiler ornek.mlp -o a.out
       <h2>Deneyin</h2>
       <p>Tüm bu özellikleri tarayıcıdan, kurulum yapmadan test edebilirsiniz.</p>
       <div class="btn-group" style="justify-content:center;">
-        <a href="https://melp-lang.github.io/melp-ide-web/" target="_blank" rel="noopener" class="btn btn-primary">Web IDE'yi Aç →</a>
+        <a href="./web-ide/" class="btn btn-primary">Web IDE'yi Aç →</a>
         <a href="kurulum.html" class="btn btn-outline">Yerel Kurulum</a>
       </div>
     </section>
