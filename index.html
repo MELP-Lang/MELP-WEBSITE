@@ -156,7 +156,10 @@
         </div>
       </div>
       <div style="text-align:center;margin-top:1rem;">
-        <a href="ozellikler.html" class="btn btn-outline">Tüm Özellikleri Gör →</a>
+        <a href="ozellikler.html" class="btn btn-outline">14 Özgün Özelliği Gör →</a>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">
+          Kaynak: <code>MELP_KANONİK/OZGUN_OZELLIKLER.md</code> — ✅ çalışan, 🔬 kısmî, ❌ henüz yok (dürüstlük satırlarıyla)
+        </p>
       </div>
     </section>
 
@@ -227,13 +230,14 @@
         <div class="section-header">
           <span class="section-label">Performans</span>
           <h2>Rakamlarla MELP</h2>
-          <p>2 Temmuz 2026 &nbsp;·&nbsp; STAGE22 &nbsp;·&nbsp; Linux x86-64 &nbsp;·&nbsp; LLVM 22.1 &nbsp;·&nbsp; PDA_14</p>
+          <p>19 Temmuz 2026 &nbsp;·&nbsp; STAGE10 &nbsp;·&nbsp; Linux x86-64 &nbsp;·&nbsp; clang-22 &nbsp;·&nbsp; PDA_45</p>
         </div>
 
-        <!-- Güncel benchmark — BORU-5 C02, 24 Haziran 2026 -->
+        <!-- Güncel benchmark — STAGE10, 19 Temmuz 2026 -->
         <div class="bench-note">
-          <b>STAGE9 — PDA_14 (Sentinel + SAO aktif)</b>
-          Ölçümler STAGE9 self-hosted derleyici (297,912 byte) ile alınmıştır. <a href="benchmark.html">Detaylı benchmark →</a>
+          <b>STAGE10 — PDA_45</b>
+          Ölçümler STAGE10 self-hosted derleyici ile alınmıştır. Her ölçüm 5 tur minimum, en iyi değer.
+          Kaynak: <code>WEB/benchmark.html</code> — ölçülmeyen hiçbir sayı eklenmemiştir.
         </div>
 
         <!-- ─── Çalışma Süresi ─────────────────────── -->
@@ -323,6 +327,29 @@
             <strong style="color:var(--text-primary);">pipe_chain</strong>
             bu makinede tüm dillerde 1 ms — zamanlayıcı tabanına çarpıyor, anlamlı fark yok.
           </p>
+
+          <!-- string 100K -->
+          <div class="bench-card">
+            <div class="bench-card-title">
+              <strong>string 100K</strong>
+              <span>100 000 karakter birleştirme — ölçek: C referans ~15 ms</span>
+            </div>
+            <p style="font-size:0.73rem;color:var(--text-muted);margin-bottom:0.5rem;">
+              📋 <strong>Protokol:</strong> 100K kez tek karakter ekleme, kapasite önceden ayrılır.
+              C: <code>char* + realloc</code>. MELP: <code>string &amp; "x"</code> döngüde.
+              Harici fonksiyon çağrıları optimizer tarafından silinemez.
+            </p>
+            <div class="bench-row">
+              <span class="bench-label">C (clang-22 -O2)</span>
+              <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
+              <span class="bench-val is-best">~15 ms</span>
+            </div>
+            <div class="bench-row">
+              <span class="bench-label is-melp">MELP STAGE10</span>
+              <div class="bench-track"><div class="bench-bar is-melp" style="width:90%"></div></div>
+              <span class="bench-val is-melp">~15 ms ✓</span>
+            </div>
+          </div>
         </div>
 
         <!-- ─── Derleme Süresi ─────────────────────── -->
@@ -400,7 +427,7 @@
         <div class="bench-footer">
           <span>Yeşil = o grafikteki en iyi değer. Python derleme süresi yok: yorumlanan çalışma modeli.</span><br>
           <span>Rust değeri <strong>release</strong> · Go değeri <strong>go build</strong> · MELP değeri tam native pipeline.</span><br>
-          <span style="font-size:0.73rem;">Kaynak: <code>LLVM/STAGE0/BENCHMARK_SUITES/results/honest_cross_lang_20260403_232020/raw_results.csv</code> — ölçülmeyen hiçbir sayı eklenmemiştir.</span>
+          <span style="font-size:0.73rem;">Kaynak: <code>LLVM/STAGE10/benchmark/</code> — ölçülmeyen hiçbir sayı eklenmemiştir. Protokol: her benchmark <code>benchmark/</code> altında .mlp + .c + .rs + .go olarak mevcuttur.</span>
         </div>
 
       </div>
