@@ -120,7 +120,7 @@
          2. MEMORY SAFE — GC'SİZ
          ==================================================== -->
     <section class="feature-section">
-      <h2>🛡️ 2. Memory Safe — GC'siz, Annotation'sız <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">Beta</span></h2>
+      <h2>🛡️ 2. Memory Safe — GC'siz, Annotation'sız <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">✅ Çalışıyor</span></h2>
       <p>
         MELP'te her değer doğduğu scope'a aittir ve o scope kapanınca serbest
         bırakılır (custody). Bellek temizliği programcının değil, scope'un işidir —
@@ -279,10 +279,81 @@ melp_compiler ornek.mlp -o a.out
     </section>
 
     <!-- ====================================================
-         8. TİP SİSTEMİ
+         6. FREEZE
          ==================================================== -->
     <section class="feature-section">
-      <h2>🔢 6. Tip Sistemi — 3 Tip, Sıfır Tip Derdi</h2>
+      <h2>🧊 6. Freeze — Dondur, Öldürme <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">🔬 Kısmî</span></h2>
+      <p style="font-size:1.1rem;font-weight:600;color:var(--text-primary);margin-bottom:1.5rem;">
+        Yaşamın üç fiili vardır: yaşa, uyu, öl.
+      </p>
+      <p>
+        Her şey bir scope ise ve scope bir yaşam birimiyse, bunun kaçınılmaz bir
+        sonucu vardır: çalışan herhangi bir dal, alt ağacıyla birlikte
+        <strong>dışarıdan dondurulabilir</strong>. Durum tam olarak korunur —
+        sayaçlar, zamanlayıcılar, bellekteki her şey. Sonra kaldığı yerden devam
+        eder ya da temizlikle birlikte kapatılır. Dondurma <strong>seçicidir</strong>:
+        kardeş scope'lar akmaya devam eder.
+      </p>
+      <p>
+        Bunun en somut karşılığı güvenlik olaylarında görülür. Bir sunucuya saldırı
+        tespit ettiğinizde klasik seçenek acıdır: süreci öldürürsünüz, saldırı durur
+        ama uçucu deliller (oturum anahtarları, enjekte edilmiş kod, bağlantı
+        durumu) buhar olur. MELP'te o alt sistemi <em>dondurursunuz</em>:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Sonuç</th><th>Neden</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Saldırı ilerleyemez</td>
+              <td>Donmuş scope tek adım bile atamaz</td>
+            </tr>
+            <tr>
+              <td>Deliller korunur</td>
+              <td>Süreç ölmediği için bellek olduğu gibi durur</td>
+            </tr>
+            <tr>
+              <td>Delil çevresi kesindir</td>
+              <td>Scope tüm belleğine sahiptir (custody) — sınırları bellidir</td>
+            </tr>
+            <tr>
+              <td>Hizmet sürer</td>
+              <td>Diğer bölgeler/kardeş scope'lar akmaya devam eder</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-box">
+        <p>
+          <strong>Bugün çalışıyor:</strong> Canlı Demo sayfasındaki "seçici freeze"
+          senaryosu bunu tarayıcıda gösterir — üç scope bağımsız çalışır, biri
+          dondurulur, kardeşleri akmaya devam eder, uyandırıldığında kaldığı
+          sayaçtan sürer. Tick değerleri WASM runtime'ından gelir, arayüzde
+          saklanmaz.
+          <a href="demo.html">Canlı Demo'da gör →</a>
+        </p>
+      </div>
+      <div class="info-box" style="margin-top:0.75rem;">
+        <p>
+          <strong>Dürüstlük satırı:</strong> Doğru terim "güvenlik duvarı" değil,
+          <strong>karantina</strong>: freeze trafiği filtrelemez, alt sistemi
+          tümüyle durdurur. Bu bir uygulama düzeyi kontroldür, işletim sistemi
+          düzeyinde bir güvenlik sınırı değildir. Kotlin'in <code class="inline">suspend</code>'i
+          fonksiyon düzeyinde ve içeriden, Erlang'ın <code class="inline">sys:suspend</code>'i
+          süreç düzeyindedir (en yakın akraba). 🔬 Bugün dışarıdan bir API ile
+          çalışır; programın kendi içinden scope dondurması ve dil sözdizimine
+          tam gömülmesi geliştirme aşamasındadır.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         7. TİP SİSTEMİ
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>🔢 7. Tip Sistemi — 3 Tip, Sıfır Tip Derdi</h2>
       <p>
         MELP'te yalnızca <strong>üç değişken tipi</strong> vardır:
       </p>
@@ -338,28 +409,123 @@ melp_compiler ornek.mlp -o a.out
     </section>
 
     <!-- ====================================================
+         8. OK BİR DEĞERDİR
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>✔️ 8. <code style="font-size:inherit;">OK</code> Bir Değerdir — Hata Scope İçinde Hallolur</h2>
+      <p>
+        MELP'te <code class="inline">void</code> diye bir tip yoktur. "Bir şey
+        döndürmeyen" fonksiyonlar aslında <code class="inline">OK</code> döndürür —
+        <em>başarı</em> anlamına gelen gerçek bir değer. Bu yüzden
+        <code class="inline">main</code>'in sonuna <code class="inline">return 0</code>
+        gibi bir tören satırı yazılmaz.
+      </p>
+      <p>
+        Hata da aynı mantıkla ele alınır: bir hata doğduğu scope içinde çözülür,
+        dışarı taşmaz. Taşıması gerekiyorsa bunu <strong>açıkça işaretlersiniz</strong> —
+        <code class="inline">?</code> operatörü "bu çağrı başarısız olursa hatayı
+        yukarı ilet" demektir. Görünmez bir istisna zinciri yoktur; hata yayılımı
+        kodun kendisinde okunur.
+      </p>
+      <div class="info-box">
+        <p>
+          <strong>Dürüstlük satırı:</strong> <code class="inline">?</code> operatörü
+          Rust'takinden esinlenmiştir. Farkımız <code class="inline">OK</code>'in bir
+          tip değil <strong>değer</strong> olması ve hatanın scope yaşam döngüsüne
+          bağlanmasıdır. Bugün kullanılan hata yakalama yapısı
+          <code class="inline">expect</code> bloğudur;
+          <code class="inline">Result</code> tipi ve <code class="inline">?</code>
+          yayılımı henüz deneysel aşamadadır.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         9. LIFO / FIFO
+         ==================================================== -->
+    <section class="feature-section">
+      <h2>☕ 9. Yığın ve Kuyruk Yoktur — Çünkü Dokudadır <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">🔬 Kısmî</span></h2>
+      <p>
+        MELP'te yerleşik <code class="inline">Stack</code> veya
+        <code class="inline">Queue</code> veri yapısı yoktur — ve gerekmez, çünkü
+        ikisi de dilin dokusunda zaten vardır.
+      </p>
+      <p>
+        <strong>LIFO, scope'un yaşam düzenidir.</strong> Scope'lar açıldıklarının
+        tersi sırayla kapanır; yıkım sırası oluşturmanın tersidir. Programcı yığın
+        yönetmez — scope açar ve kapatır. Bunun bir yan sonucu daha var: mutasyon
+        tek bir scope'ta ve sıralı olduğu için, dilde
+        <code class="inline">mutex</code> ya da <code class="inline">atomic</code>
+        gibi bir anahtar kelime bulunmaz.
+      </p>
+      <p>
+        <strong>FIFO, channel'ın teslim düzenidir</strong> — sloganıyla:
+        <em>kahve soğumayacak.</em> İşi biten scope'un kuyruğu önce boşalır; hazır
+        sipariş sıcakken servis edilir, hiçbir mesaj sonraki işler sürerken
+        tezgâhta beklemez.
+      </p>
+      <div class="info-box">
+        <p>
+          <strong>Dürüstlük satırı:</strong> Her dil çağrı yığınına dayanır (LIFO
+          altta hep vardır) ve Go'nun channel'ları da FIFO'dur. MELP'in iddiası
+          bunları ayrıca bir veri yapısı ya da eşzamanlılık ilkesi olarak sunmaya
+          gerek bırakmayan tek model olmasıdır. 🔬 channel/tunnel uygulaması
+          kısmîdir; algoritmik yığın/kuyruk ihtiyacı bugün liste üzerine elle
+          kurulur — bu bilinen bir boşluktur.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====================================================
          10. DEBUG
          ==================================================== -->
     <section class="feature-section">
-      <h2>🐛 7. Yerleşik <code style="font-size:inherit;">debug</code> Anahtar Kelimesi</h2>
-      <p>
-        Kaynak kodda hata noktası işaretlemek için ayrı kütüphane ya da araç gerekmez.
-        <code class="inline">debug</code> dil düzeyinde bir anahtar kelimedir.
-        Üretim derlemesinde (<code class="inline">--release</code>) sıfır maliyet —
-        kod ve sembol üretilmez.
+      <h2>🐛 10. <code style="font-size:inherit;">debug</code> Bloğu — Geçmişten Geleceğe Mektup</h2>
+      <p style="font-size:1.1rem;font-weight:600;color:var(--text-primary);margin-bottom:1.5rem;">
+        Yorum satırı okunmayabilir. <em>Mektup koşar.</em>
       </p>
-      <div class="code-panel" style="max-width:480px;">
-        <div class="code-panel-header"><span class="lang-dot"></span>MELP — Debug</div>
-        <pre><code><span class="kw">function</span> <span class="fn">hesapla</span>(x)
-    debug  <span class="cm">-- burada dur, değerleri göster</span>
-    <span class="kw">return</span> x * 2
-<span class="kw">end function</span></code></pre>
+      <p>
+        Kurumsal hafızanın en sessiz kaybı şudur: kod kalır, <strong>niyet ölür</strong>.
+        Sistemi yazan mimar emekli olur; ardında bıraktığı yorum satırlarını kimse
+        okumaz. Daha kötüsü, o yorumlar zamanla <em>yalan</em> olur — "üye sayısı
+        10 bini geçmez" diye yazılmıştır, doğrudur, sonra dünya değişir ve program
+        sessizce yanlışlaşır.
+      </p>
+      <p>
+        MELP'te varsayımı koşan bir nöbetçiye çevirirsiniz:
+      </p>
+      <div class="code-panel" style="max-width:620px;">
+        <div class="code-panel-header"><span class="lang-dot"></span>MELP — debug bloğu</div>
+        <pre><code><span class="kw">debug</span>
+    <span class="kw">if</span> uye_sayisi &gt; 10000 <span class="kw">then</span> <span class="kw">stop</span>
+    <span class="cm">-- Üye sayısı 10 bini geçince yeni bir veritabanı</span>
+    <span class="cm">-- mimarisi gerekebilir. — 2026, ilk ekip</span>
+<span class="kw">end debug</span></code></pre>
       </div>
+      <p>
+        On yıl sonra, o mimar çoktan ayrılmışken, üye sayısı 10 bini geçtiği gün
+        program durur ve mektubu okutur. Varsayım sessizce eskimez.
+      </p>
       <div class="info-box">
         <p>
-          <code class="inline">--release</code> ile derlendiginde tüm
-          <code class="inline">debug</code> ifadeleri derleme zamanında kaldırılır.
-          Üretim binary'inde sıfır iz.
+          <strong>Üretimde sıfır maliyet:</strong>
+          <code class="inline">MELP_RELEASE=1</code> ile derlendiğinde
+          <code class="inline">debug</code> blokları tamamen çıkarılır — üretim
+          binary'inde tek iz kalmaz. Bugün hata ayıklayıcıda
+          (<code class="inline">gdb</code>/<code class="inline">lldb</code>) her
+          blokta durulabiliyor.
+        </p>
+      </div>
+      <div class="info-box" style="margin-top:0.75rem;">
+        <p>
+          <strong>Dürüstlük satırı:</strong> En yakın akrabaları JavaScript'in
+          <code class="inline">debugger;</code> ifadesi, C'nin
+          <code class="inline">assert</code>'ü ve Eiffel'in sözleşmeli tasarımıdır.
+          MELP'inki blok formu + koşul + açıklamayı birleştirmesiyle ayrışır:
+          <code class="inline">assert</code> ihlalde çöker, MELP'in
+          <code class="inline">stop</code>'u ise scope'u dondurmayı hedefler —
+          durum korunur, kardeş işler akmaya devam eder. Bu dondurma
+          entegrasyonu henüz tasarım aşamasındadır.
         </p>
       </div>
     </section>
@@ -368,7 +534,7 @@ melp_compiler ornek.mlp -o a.out
          11. ÖLÜ MODÜL FELSEFESİ
          ==================================================== -->
     <section class="feature-section">
-      <h2>💀 8. Ölü Modül Felsefesi</h2>
+      <h2>💀 11. Ölü Modül Felsefesi</h2>
       <p>
         Scope modelinin doğal sonucu: modüller varsayılan olarak <strong>ölüdür</strong>.
         Hiçbir modül kendi başına kaynak tahsis etmez ya da bellekte yer kaplamaz.
@@ -398,7 +564,7 @@ melp_compiler ornek.mlp -o a.out
          12. ADLANDIRILMIŞ KAPSAMLAR
          ==================================================== -->
     <section class="feature-section">
-      <h2>📌 9. Adlandırılmış Kapsamlar — <code style="font-size:inherit;">scope</code></h2>
+      <h2>📌 12. Adlandırılmış Kapsamlar — <code style="font-size:inherit;">scope</code></h2>
       <p>
         <code class="inline">scope ad</code> ile iç içe bloktan temiz koşullu çıkış sağlanır.
         Derin döngülerde bayrak değişkeni ya da exception gerekmez.
@@ -421,7 +587,7 @@ melp_compiler ornek.mlp -o a.out
          10. GUI = SCOPE AĞACI
          ==================================================== -->
     <section class="feature-section">
-      <h2>🎨 10. Arayüz Bir Çizimdir — GUI = Scope Ağacı <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">🔬 Kısmî</span></h2>
+      <h2>🎨 13. Arayüz Bir Çizimdir — GUI = Scope Ağacı <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">🔬 Kısmî</span></h2>
       <p>
         Çoğu dilde arayüz ayrı bir dille yazılır: XML, QML, HTML, JSX. MELP'te
         arayüz dilin kendi scope'larıyla tanımlanır — çünkü ikisi yapısal olarak
@@ -463,7 +629,7 @@ melp_compiler ornek.mlp -o a.out
          13. STRUCT + FONKSİYON
          ==================================================== -->
     <section class="feature-section">
-      <h2>🧱 11. Struct + Fonksiyon — Class Yok</h2>
+      <h2>🧱 14. Struct + Fonksiyon — Class Yok</h2>
       <p>
         MELP'te veri <code class="inline">struct</code> ile, davranış bağımsız fonksiyonlarla tanımlanır.
         OOP hiyerarşisi olmadan aynı modelleme gücü, çok daha az karmaşıklık.
@@ -493,7 +659,7 @@ melp_compiler ornek.mlp -o a.out
          10. MODÜLER MİMARİ
          ==================================================== -->
     <section class="feature-section">
-      <h2>🗂️ 12. Modüler Mimari</h2>
+      <h2>🗂️ 15. Modüler Mimari</h2>
       <p>
         Her modül tek sorumluluğa sahiptir; merkezi orkestratör yasaktır.
         Derleme sırası otomatik dependency graph'tan belirlenir — döngüsel bağımlılık
@@ -513,7 +679,7 @@ melp_compiler ornek.mlp -o a.out
          11. PLATFORM BAĞIMSIZ
          ==================================================== -->
     <section class="feature-section">
-      <h2>🌐 13. Platform Bağımsız <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">🔬 Kısmî</span></h2>
+      <h2>🌐 16. Platform Bağımsız <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">🔬 Kısmî</span></h2>
       <p>
         Bir kere yaz, her yerde çalıştır. LLVM altyapısı sayesinde aynı kaynak kod
         Linux, macOS ve Windows için native binary üretir. Çapraz derleme için ayrı araç gerekmez.
@@ -530,7 +696,7 @@ melp_compiler ornek.mlp -o a.out
          12. ÖZ-DERLEME HEDEFİ
          ==================================================== -->
     <section class="feature-section">
-      <h2>🎯 14. Self-Hosting — Derleyici Kendini Derler</h2>
+      <h2>🎯 17. Self-Hosting — Derleyici Kendini Derler</h2>
       <p>
         MELP derleyicisi MELP ile yazılmıştır ve kendi kaynağını derler.
         "Self-hosting" denen bu eşik, bir dilin olgunluk göstergesidir ve

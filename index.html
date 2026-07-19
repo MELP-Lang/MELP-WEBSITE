@@ -60,6 +60,29 @@
       </div>
     </section>
 
+    <!-- ========== AMİRAL İDDİA ========== -->
+    <section style="padding-top:1rem;padding-bottom:0;">
+      <div style="max-width:760px;margin:0 auto;padding:1.75rem 1.5rem;border-left:3px solid var(--accent);background:var(--bg-secondary);border-radius:0 10px 10px 0;">
+        <p style="font-size:1.15rem;line-height:1.65;color:var(--text-primary);margin:0 0 1rem;">
+          Yazılımın en pahalı yarası bellek güvenliğidir — ciddi güvenlik
+          açıklarının yaklaşık <strong>%70'i</strong> bellek hatasıdır. Rust bu
+          yarayı kapatır, ama bedeli borrow checker'ın öğrenme duvarıdır.
+          <strong>MELP aynı yarayı o duvar olmadan kapatmayı hedefler:</strong>
+          programcı hiçbir şey işaretlemez — ne <code class="inline">&amp;</code>,
+          ne lifetime, ne <code class="inline">unsafe</code>. Scope = ömür.
+        </p>
+        <p style="font-size:0.9rem;line-height:1.6;color:var(--text-muted);margin:0;">
+          <strong style="color:var(--text-primary);">Kanıt durumu, dürüstçe:</strong>
+          Mekanizma çalışıyor ve valgrind ile doğrulanmış durumda. Bu haftanın en
+          ciddi iki hatası da tam bu sınıftandı — ikisi de test korpusumuz tarafından
+          yakalanıp kapatıldı; bu hem yaranın ne kadar zor olduğunun hem de
+          mekanizmanın onu gördüğünün kanıtı. Gerçek dünya ölçeğindeki kanıt
+          sıradaki işimiz. Bugün <em>hedefliyor</em> diyoruz; kanıt tamamlandığında
+          <em>sağlıyor</em> diyeceğiz.
+        </p>
+      </div>
+    </section>
+
     <!-- ========== İSMİN HİKAYESİ ========== -->
     <section style="padding-top:1rem;padding-bottom:0;">
       <blockquote style="max-width:640px;margin:0 auto;text-align:center;border-left:none;padding:0;">
