@@ -45,6 +45,18 @@ kaybettirmiyor." Abartı yok — ve "C ligi"nin en somut kanıtı.
 sınıfı, sabit-katsayıda geride." index.html'deki eski "her ikisi ~15ms"
 YANLIŞ — bu tablo geçerli.
 
+### ⚠️ "TORPİL DENETİMİ" — her hız satırı objdump ile doğrulandı
+Okuyucu haklı olarak sorar: "C/Rust bu testte LLVM'in katlamasından
+yararlanıp döngüyü hiç koşmuyor olabilir mi?" Cevap: HAYIR, ve bu
+disassemble ile kanıtlandı (BF, 19 Tem):
+- **string100k C binary'si**: `main`'de `cmp $0x186a0` (=100000 sayaç) +
+  `call realloc@plt` + geri-`jmp` → döngü FİİLEN koşuyor. Her adım gerçek
+  bellek ayırma/kopyalama = **yan etkili**, LLVM katlayamaz (malloc'u
+  silmek davranışı değiştirir). Bu GERÇEK bir CPU ölçümüdür.
+- **loop100m** ise yan-etkisiz (`x=x+1`) → LLVM katlar → aşağıda, tablo DIŞI.
+**Kural:** Hız tablosundaki HER satır "döngü canlı mı" diye objdump ile
+denetlenmiştir; katlanan test hız tablosuna GİREMEZ (yalnız optimize notu).
+
 ### loop 100M — HIZ TABLOSUNA GİRMEZ
 LLVM induction-variable elimination döngüyü compile-time katlar. Bu
 optimize-EDİLEBİLİRLİK göstergesidir (MELP'in IR'ı temiz → LLVM

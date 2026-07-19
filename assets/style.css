@@ -142,7 +142,7 @@ nav {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.15rem;
   list-style: none;
 }
 
@@ -150,6 +150,7 @@ nav {
   color: var(--text-muted);
   font-size: 0.95rem;
   transition: color 0.2s;
+  white-space: nowrap;          /* menü başlıkları satır kırmasın */
 }
 
 .nav-links a:hover,

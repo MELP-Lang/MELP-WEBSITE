@@ -21,10 +21,12 @@
       <ul class="nav-links" id="navLinks">
         <li><a href="index.html">Ana Sayfa</a></li>
         <li><a href="ozellikler.html" class="active">Özellikler</a></li>
+        <li><a href="neden-melp.html">Neden MELP?</a></li>
+        <li><a href="benchmark.html">Benchmark</a></li>
         <li><a href="kurulum.html">Kurulum</a></li>
         <li><a href="docs.html">Dokümanlar</a></li>
-        <li><a href="inventory.html">Envanter</a></li>
-        <li><a href="https://melp-lang.github.io/melp-ide-web/" target="_blank" rel="noopener" class="btn-nav">Hemen Dene →</a></li>
+        <li><a href="ornekler.html">Örnekler</a></li>
+        <li><a href="./web-ide/" class="btn-nav">Hemen Dene →</a></li>
       </ul>
       <div class="theme-toggle">
         <button class="theme-btn" data-theme="dark" title="Koyu tema" aria-label="Koyu tema">🌙</button>
@@ -120,10 +122,10 @@
     <section class="feature-section">
       <h2>🛡️ 2. Memory Safe — GC'siz, Annotation'sız <span class="badge badge-blue" style="font-size:0.75rem;vertical-align:middle;">Beta</span></h2>
       <p>
-        MELP, varsayılan olarak global durum oluşturmaya izin vermez. Bu tek kural
-        sayesinde bellek sızıntısı derleyici düzeyinde imkânsız hale gelir —
-        ne çalışma zamanı Garbage Collector ne de Rust'ın borrow checker'ı gibi
-        manuel annotation sistemi gerekir.
+        MELP'te her değer doğduğu scope'a aittir ve o scope kapanınca serbest
+        bırakılır (custody). Bellek temizliği programcının değil, scope'un işidir —
+        ne çalışma zamanı Garbage Collector'ı ne de Rust'ın borrow checker'ı gibi
+        manuel bir işaretleme sistemi gerekir.
       </p>
 
       <div class="table-wrap">
@@ -167,13 +169,16 @@
 
       <div class="info-box">
         <p>
-          <strong>Stateless-First:</strong> Varsayılan tercih saf ve kısa ömürlü işlemlerdir.
-          Global durum gerekiyorsa MELP sizi engellemez. Kullanıcı, bedeline katlanarak
-          isterse MELP'i stateful olarak da kullanabilir.*
+          <strong>Ömür = scope:</strong> Bir değişkenin yaşam süresi, içinde
+          bulunduğu scope'un yaşam süresidir — ayrıca yönetilmesi gereken bağımsız
+          bir "durum" katmanı yoktur. Uzun ömürlü veri gerektiğinde onu daha üst bir
+          scope'ta tanımlarsınız; kural değişmez, yalnızca sahip değişir.
         </p>
         <p style="font-size:0.85rem;opacity:0.75;margin-top:0.5rem;">
-          * Stateful kullanımın bedeli beklenenin ötesinde çok maliyetli değildir.
-          MELP'in scope mekanizması bu durumun üstesinden gelecek şekilde planlanmıştır.
+          <strong>Dürüstlük satırı:</strong> Custody bugün büyük sayıları ve
+          yazdırılan metinleri kapsar (valgrind ile kaçak 0). Genel metin geçicileri
+          henüz custody dışındadır ve sızdırır — bilinen ve adreslenmiş bir sınırdır,
+          birleşik custody çalışmasıyla kapanacaktır.
         </p>
       </div>
     </section>
