@@ -705,7 +705,8 @@ code.inline {
 .bench-bar {
   height: 100%;
   border-radius: 3px;
-  background: color-mix(in srgb, var(--text-muted) 35%, transparent);
+  background: color-mix(in srgb, var(--text-muted) 70%, transparent);
+  min-width: 3px;               /* çok küçük değerler de görünür kalsın */
 }
 
 .bench-bar.is-melp  { background: var(--accent); }

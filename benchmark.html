@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MELP Benchmark — BORU-5 performans karşılaştırması. Sentinel temizliği sonrası.">
+  <meta name="description" content="MELP Benchmark — protokollü performans ölçümleri: fib(40) ve string concat 100K, C/Rust/Go karşılaştırmasıyla.">
   <title>Benchmark — MELP</title>
   <link rel="shortcut icon" type="image/x-icon" href="assets/MELP_logo_1.ico">
   <link rel="icon" type="image/png" href="assets/MELP_logo.png">
@@ -40,27 +40,55 @@
   <main>
     <section style="padding-top:3.5rem;padding-bottom:1rem;">
       <span class="section-label">Performans</span>
-      <h1 style="font-size:2.4rem;margin-bottom:0.5rem;">Benchmark</h1>
-      <p class="muted">BORU-5 — 24 Haziran 2026 (C02) · Linux x86-64 · LLVM 22.1 · her ölçüm 5 tur minimum · Golden 267,064 byte</p>
+      <h1 style="font-size:2.4rem;margin-bottom:0.5rem;">Performans — C Ligi, Sürprizsiz</h1>
+      <p class="muted">19 Temmuz 2026 · MELP v1.0 · Intel Core i7-10750H · Linux x86-64</p>
     </section>
 
     <section>
       <div class="bench-wrap" style="padding:0 1.5rem;">
 
-        <!-- Uyarı: metodoloji -->
-        <div class="bench-note" style="border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg-secondary));">
-          <b>BORU-5 — 24 Haziran 2026 (C02 sentinel temizliği)</b><br>
-          Golden 267,064 byte · SAO/Sentinel/FBO: OFF (plug-and-play) · 106 satır kod silindi<br>
-          <code>melp install</code> · STDLIB 6 modül · E004/E042 hata kodları<br><br>
-          <strong style="color:var(--success);">🟢 Performans özeti:</strong>
-          Sentinel temizliği sonrası MELP, C (clang -O2) ile başa baş.
-          fib(40): MELP 233ms vs C 238ms (MELP hızlı!). primes(10K): MELP 3ms = C 3ms.
-          Kod eksiltip hızlanmak — en iyi optimizasyon bu.<br><br>
-          <strong style="color:var(--warning);">⚠ Metodoloji:</strong> Tüm testler clang -O2 ile derlenir.
-          Her ölçüm 5 tur, en iyi değer alınır. "loop 100M" CPU testi değil, optimizer testidir.</strong>
+        <!-- Çerçeve -->
+        <div class="bench-note">
+          <b>Ne iddia ediyoruz, ne etmiyoruz.</b>
+          MELP "C'den hızlı" iddiasında <strong>değildir</strong>. Hedefi sürprizsiz,
+          ölçülebilir, C ligi performansıdır — aynı asimptotik sınıf, bilinen sabit fark.
+          MELP LLVM/clang ile derlenir; bu yüzden en adil kıyas, C'nin de aynı backend'le
+          (<code>clang -O2</code>) derlenmesidir — böylece tek değişken dilin kendisi olur.
         </div>
 
-        <!-- ===== Çalışma Süresi ===== -->
+        <!-- ─── Protokol ─────────────────────── -->
+        <div class="bench-group">
+          <p class="bench-group-title">Protokol &nbsp;— denetlenebilirlik için</p>
+          <div class="bench-card">
+            <table style="width:100%;font-size:0.85rem;">
+              <tbody>
+                <tr>
+                  <td style="width:26%;"><strong>Makine</strong></td>
+                  <td>Intel Core i7-10750H @ 2.60GHz · 12 thread · Linux x86-64</td>
+                </tr>
+                <tr>
+                  <td><strong>Derleyiciler</strong></td>
+                  <td>MELP v1.0 &nbsp;·&nbsp; clang 22.1.8 (-O2) &nbsp;·&nbsp; gcc 14.2 (-O2)
+                      &nbsp;·&nbsp; rustc 1.93.0 (-O) &nbsp;·&nbsp; go 1.25.7</td>
+                </tr>
+                <tr>
+                  <td><strong>Yöntem</strong></td>
+                  <td>Her test 5 kez koşuldu, <strong>en iyi</strong> değer raporlandı
+                      (soğuk-başlangıç gürültüsü elenir). Tüm diller aynı makinede, aynı turda.</td>
+                </tr>
+                <tr>
+                  <td><strong>Adillik</strong></td>
+                  <td>Her dilin kaynağı depoda açıktır (<code>benchmark/*.{mlp,c,rs,go}</code>).
+                      C referansı deyimseldir — örneğin <code>string100k.c</code> uzunluğu bir
+                      değişkende tutar, her turda <code>strlen</code> çağıran saman-adam
+                      <strong>değildir</strong>.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ─── Çalışma Süresi ─────────────────────── -->
         <div class="bench-group">
           <p class="bench-group-title">Çalışma süresi &nbsp;(ms) &nbsp;— düşük daha iyi</p>
 
@@ -68,181 +96,99 @@
           <div class="bench-card">
             <div class="bench-card-title">
               <strong>fib(40)</strong>
-              <span>recursive Fibonacci — ölçek: en iyi 167ms (GCC -O2)</span>
+              <span>özyinelemeli Fibonacci — katlanamaz, gerçek CPU işi</span>
             </div>
             <div class="bench-row">
-              <span class="bench-label">GCC -O2</span>
-              <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
-              <span class="bench-val is-best">167 ms</span>
+              <span class="bench-label">C (clang -O2)</span>
+              <div class="bench-track"><div class="bench-bar is-best" style="width:54%"></div></div>
+              <span class="bench-val is-best">232 ms</span>
             </div>
             <div class="bench-row">
               <span class="bench-label is-melp">MELP</span>
-              <div class="bench-track"><div class="bench-bar is-melp" style="width:72%"></div></div>
-              <span class="bench-val is-melp">233 ms</span>
+              <div class="bench-track"><div class="bench-bar is-melp" style="width:55%"></div></div>
+              <span class="bench-val is-melp">234 ms</span>
             </div>
             <div class="bench-row">
-              <span class="bench-label">Rust Release</span>
-              <div class="bench-track"><div class="bench-bar" style="width:68%"></div></div>
-              <span class="bench-val">247 ms</span>
+              <span class="bench-label">Rust (-O)</span>
+              <div class="bench-track"><div class="bench-bar" style="width:65%"></div></div>
+              <span class="bench-val">277 ms</span>
             </div>
             <div class="bench-row">
               <span class="bench-label">Go</span>
-              <div class="bench-track"><div class="bench-bar" style="width:40%"></div></div>
-              <span class="bench-val">421 ms</span>
+              <div class="bench-track"><div class="bench-bar" style="width:100%"></div></div>
+              <span class="bench-val">429 ms</span>
             </div>
-            <hr class="bench-divider">
-            <div class="bench-row">
-              <span class="bench-label">Python 3</span>
-              <div class="bench-track"><div class="bench-bar" style="width:100%;opacity:0.35"></div></div>
-              <span class="bench-val" style="font-size:0.72rem;">11 984 ms</span>
-            </div>
-          </div>
-
-          <!-- primes -->
-          <div class="bench-card">
-            <div class="bench-card-title">
-              <strong>primes</strong>
-              <span>asal sayılar ≤ 100 000 — ölçek: en iyi 6ms (GCC -O2)</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label">GCC -O2</span>
-              <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
-              <span class="bench-val is-best">6 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label">Rust Release</span>
-              <div class="bench-track"><div class="bench-bar" style="width:86%"></div></div>
-              <span class="bench-val">7 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label is-melp">MELP</span>
-              <div class="bench-track"><div class="bench-bar is-melp" style="width:75%"></div></div>
-              <span class="bench-val is-melp">8 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label">Go</span>
-              <div class="bench-track"><div class="bench-bar" style="width:29%"></div></div>
-              <span class="bench-val">21 ms</span>
-            </div>
-            <hr class="bench-divider">
-            <div class="bench-row">
-              <span class="bench-label">Python 3</span>
-              <div class="bench-track"><div class="bench-bar" style="width:100%;opacity:0.35"></div></div>
-              <span class="bench-val" style="font-size:0.72rem;">301 ms</span>
-            </div>
-          </div>
-
-          <!-- string builder -->
-          <div class="bench-card">
-            <div class="bench-card-title">
-              <strong>string builder 100K</strong>
-              <span>100 000 string birleştirme — ölçek: MELP 3ms 🚀</span>
-            </div>
-            <p style="font-size:0.73rem;color:var(--text-muted);margin-bottom:0.5rem;">
-              📋 <strong>Metodoloji:</strong> 100K kez tek karakter ekleme. Kapasite önceden ayrılır (4096 byte).
-              Çıktı uzunluğu doğrulanır (len=100000). C ve Rust eşdeğer StringBuilder/String kullanır.
-              Harici fonksiyon çağrıları (malloc) optimizer tarafından silinemez — gerçek performans testidir.
+            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.75rem;">
+              <strong>Okuma:</strong> MELP ile C pratikte özdeştir (234 ≈ 232) — aynı LLVM
+              backend'i kullanıldığında dil katmanı ölçülebilir bir kayıp getirmiyor.
+              Bu tablonun asıl söylediği budur. MELP bu testte Rust ve Go'nun da önünde
+              çıkmıştır; bu tek satırlık bir sonuçtur, manşet değildir.
             </p>
-            <div class="bench-row">
-              <span class="bench-label is-melp">MELP</span>
-              <div class="bench-track"><div class="bench-bar is-melp is-best" style="width:100%"></div></div>
-              <span class="bench-val is-melp is-best">~2 ms 🚀</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label">Rust Release</span>
-              <div class="bench-track"><div class="bench-bar" style="width:24%"></div></div>
-              <span class="bench-val">2 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label">C (GCC -O2)</span>
-              <div class="bench-track"><div class="bench-bar" style="width:6%"></div></div>
-              <span class="bench-val">48 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label">Go</span>
-              <div class="bench-track"><div class="bench-bar" style="width:11%"></div></div>
-              <span class="bench-val">454 ms</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- ===== Optimizer Testi ===== -->
-        <div class="bench-group">
-          <p class="bench-group-title">Derleyici Optimizer Testi &nbsp;(ms) &nbsp;— DCE dedektörü</p>
-
-          <div class="bench-card">
-            <div class="bench-card-title">
-              <strong>loop 100M (counter)</strong>
-              <span>100 milyon sayma döngüsü — ⚠️ optimizer testidir, CPU testi DEĞİLDİR</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label is-melp">MELP</span>
-              <div class="bench-track"><div class="bench-bar is-melp is-best" style="width:100%"></div></div>
-              <span class="bench-val is-melp is-best">2 ms 🚀</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label">Rust Release</span>
-              <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
-              <span class="bench-val is-best">2 ms</span>
-            </div>
-            <div class="bench-row">
-              <span class="bench-label">GCC -O2</span>
-              <div class="bench-track"><div class="bench-bar" style="width:15%"></div></div>
-              <span class="bench-val">130 ms</span>
-            </div>
-            <p style="font-size:0.73rem;color:var(--text-muted);margin-top:0.5rem;">
-              ⚠️ <strong>Bu test CPU hızını değil, derleyicinin ölü kodu ne kadar agresif sildiğini ölçer.</strong>
-              Döngü gövdesinde yan etki olmadığı için optimizer döngüyü tamamen kaldırabilir.
-              Bu benchmarkta GCC sürümü/test yapısı döngüyü elimine etmemiştir (130ms);
-              Rust ve MELP LLVM tabanlı oldukları için elimine etmiştir (2ms).
-              Gerçek CPU performansı için <strong>fib(40)</strong> ve <strong>primes</strong> testlerine bakın.
+            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.5rem;">
+              <strong>Dipnot:</strong> Aynı C kaynağı <code>gcc -O2</code> ile derlendiğinde
+              171 ms'de koşar. Bu, gcc'nin bu özyineleme örüntüsündeki kod üretiminin
+              LLVM'inkinden iyi olduğunu gösterir — dillerin değil, backend'lerin farkıdır.
+              Kıyas tablosunda clang kullanılmasının nedeni budur.
             </p>
           </div>
-        </div>
 
+          <!-- string concat 100K -->
           <div class="bench-card">
             <div class="bench-card-title">
-              <strong>string concat 100K (&amp;)</strong>
-              <span>eski API — 100 000 birleştirme (karşılaştırma amaçlı)</span>
+              <strong>string concat 100K</strong>
+              <span>100 000 birleştirme — karmaşıklık sınıfı doğrulaması</span>
             </div>
-            <p style="font-size:0.73rem;color:var(--text-muted);margin-bottom:0.5rem;">
-              📋 Builder API'si olmadan saf string birleştirme. Her birleştirmede yeni allocation.
-              Builder API'sinin neden 647x daha hızlı olduğunu göstermek için referans olarak tutulur.
-            </p>
             <div class="bench-row">
-              <span class="bench-label">GCC -O2</span>
-              <div class="bench-track"><div class="bench-bar is-best" style="width:100%"></div></div>
-              <span class="bench-val is-best">48 ms</span>
+              <span class="bench-label">C / Rust</span>
+              <div class="bench-track"><div class="bench-bar is-best" style="width:1%"></div></div>
+              <span class="bench-val is-best">~1 ms</span>
             </div>
             <div class="bench-row">
               <span class="bench-label is-melp">MELP</span>
               <div class="bench-track"><div class="bench-bar is-melp" style="width:3%"></div></div>
-              <span class="bench-val is-melp">1758 ms</span>
+              <span class="bench-val is-melp">9 ms</span>
             </div>
+            <div class="bench-row">
+              <span class="bench-label">Go</span>
+              <div class="bench-track"><div class="bench-bar" style="width:100%"></div></div>
+              <span class="bench-val">378 ms</span>
+            </div>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.75rem;">
+              <strong>Okuma:</strong> MELP C/Rust ile aynı karmaşıklık sınıfındadır — O(n).
+              Sabit katsayıda C ve Rust öndedir (~9x). Bu, kabul edilen ve bilinen bir farktır;
+              daha önce bu test O(n²) davranıyordu ve 1758 ms sürüyordu.
+            </p>
+          </div>
+        </div>
+
+        <!-- ─── Ölçüm sayılmayanlar ─────────────────────── -->
+        <div class="bench-group">
+          <p class="bench-group-title">Hız tablosuna girmeyenler</p>
+          <div class="bench-card">
+            <div class="bench-card-title">
+              <strong>loop 100M</strong>
+              <span>optimize-edilebilirlik göstergesi — hız ölçümü değil</span>
+            </div>
+            <p style="font-size:0.82rem;color:var(--text-muted);">
+              Yan etkisi olmayan 100 milyonluk boş döngü, LLVM tarafından derleme
+              zamanında katlanır (induction variable elimination) — yani döngü hiç
+              koşmaz. Böyle bir testte çıkan "2 ms" değeri CPU hızını değil, ölü kod
+              elemenin ne kadar agresif olduğunu ölçer. MELP'in ürettiği IR'ın LLVM
+              tarafından katlanabilecek kadar temiz olması olumlu bir işarettir; ancak
+              bu bir <strong>hız sonucu değildir</strong> ve karşılaştırma tablosuna
+              alınmaz. Aynı döngü GCC'de katlanmadığı için ortaya çıkan devasa fark,
+              geçmişte "MELP C'den 65 kat hızlı" gibi yanlış bir sonuca yol açmıştı.
+            </p>
           </div>
         </div>
 
         <!-- Dipnot -->
         <div class="bench-footer">
           <span>Yeşil = o grafikteki en iyi değer. Turuncu = MELP.</span><br>
-          <span>Rust değeri <strong>release</strong> · Go değeri <strong>go build</strong> · MELP değeri tam native pipeline (clang -O2).</span><br>
-          <span style="font-size:0.73rem;">Kaynak: <code>LLVM/STAGE10/benchmark/</code> — 19 Temmuz 2026, STAGE10. Golden 371,528 byte. Protokol: <code>benchmark/</code> dizinindeki .mlp + .c + .rs + .go dosyaları, <code>clang -O2</code> ile derlenir.</span>
-        </div>
-
-        <!-- Tarihsel ilerleme -->
-        <div class="bench-group" style="margin-top:3rem;">
-          <p class="bench-group-title">Tarihsel İlerleme — MELP fib(40)</p>
-          <div class="bench-card">
-            <table style="width:100%;font-size:0.85rem;">
-              <thead><tr><th>Tarih</th><th>Derleyici</th><th>fib(40)</th><th>Not</th></tr></thead>
-              <tbody>
-                <tr><td>8 Haz</td><td>STAGE6</td><td>❌</td><td>kullanıcı kodu çalışmıyor</td></tr>
-                <tr><td>11 Haz</td><td>STAGE7 (PD_51)</td><td>298ms</td><td>PLAN_10 generics eklendi</td></tr>
-                <tr style="color:var(--accent);font-weight:600;"><td>11 Haz</td><td>STAGE7 (PD_52)</td><td>228ms</td><td>PLAN_10.5 — %23 iyileşme 🚀</td></tr>
-                <tr style="color:var(--success);font-weight:600;"><td>24 Haz</td><td>BORU-5 (C02)</td><td>233ms</td><td>Sentinel OFF 🚀 C'den hızlı</td></tr>
-              </tbody>
-            </table>
-          </div>
+          <span style="font-size:0.73rem;">Kaynak: <code>benchmark/</code> dizinindeki
+          <code>.mlp</code> + <code>.c</code> + <code>.rs</code> + <code>.go</code> dosyaları.
+          Ölçüm tarihi 19 Temmuz 2026. Bu sayfadaki her sayı ölçülmüştür; ölçülmeyen hiçbir
+          değer yayınlanmaz.</span>
         </div>
 
       </div>
@@ -250,7 +196,7 @@
 
     <section class="cta-section">
       <h2>Kendi Testinizi Yapın</h2>
-      <p>BORU-5 derleyicisiyle benchmark'ları kendi makinenizde koşabilirsiniz.</p>
+      <p>Benchmark kaynakları depoda açıktır — aynı testleri kendi makinenizde koşabilirsiniz.</p>
       <div class="btn-group" style="justify-content:center;">
         <a href="kurulum.html" class="btn btn-outline">Kurulum</a>
         <a href="https://github.com/MELP-Lang/MELP" target="_blank" rel="noopener" class="btn btn-primary">GitHub →</a>
