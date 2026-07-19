@@ -62,16 +62,7 @@ end hesap
 <strong>Go:</strong> GC ile bellek yönetimi, pause süreleri.<br>
 <strong>MELP:</strong> Scope = yaşam döngüsü. Ne GC, ne borrow checker.</p>
 
-<h2>2. OK/STO/SAO — Plug-and-Play Optimizasyon</h2>
-<table>
-<tr><th>Katman</th><th>Açılım</th><th>Görev</th><th>Durum</th></tr>
-<tr><td>OK</td><td>Optimizasyon Katmanı</td><td>Kozmetik hızlandırıcı</td><td>İleride ON yapılabilir</td></tr>
-<tr><td>STO</td><td>Statik Tip Optimizasyonu</td><td>Tip + Depolama analizi</td><td class="win">✅ Aktif</td></tr>
-<tr><td>SAO</td><td>Statik Etki Analizi</td><td>Yan etki + sentinel</td><td>OFF (plug-and-play)</td></tr>
-</table>
-<p>SAO ve sentinel altyapısı <strong>plug-and-play</strong> modunda: isteğe bağlı açılabilir, kapalıyken sıfır ek yük. BORU-5'te kapalı — kod eksiltip hızlandık.</p>
-
-<h2>3. Self-Hosting — Derleyici MELP'te Yazıldı</h2>
+<h2>2. Self-Hosting — Derleyici MELP'te Yazıldı</h2>
 <pre><code># MELP derleyicisi kendini derleyebilir:
 melp_compiler < main.mlp > stage.ll
 clang stage.ll -o new_compiler
@@ -79,7 +70,7 @@ clang stage.ll -o new_compiler
 diff stage.ll stage2.ll  # → boş (self-hosting kanıtı!)</code></pre>
 <p>Bu, dilin <strong>olgunluğunun</strong> ve <strong>güvenilirliğinin</strong> kanıtıdır.</p>
 
-<h2>4. Çok Dilli Keyword — Kod Her Dilde Okunur</h2>
+<h2>3. Çok Dilli Keyword — Kod Her Dilde Okunur</h2>
 <table class="comparison">
 <tr><th>TR</th><th>EN</th><th>RU</th><th>AR</th></tr>
 <tr><td><code>fonksiyon</code></td><td><code>function</code></td><td><code>функция</code></td><td><code>دالة</code></td></tr>
@@ -88,7 +79,7 @@ diff stage.ll stage2.ll  # → boş (self-hosting kanıtı!)</code></pre>
 </table>
 <p>Aynı kod, <strong>6 dilde</strong> okunabilir. Ana dili İngilizce olmayan geliştiriciler için.</p>
 
-<h2>5. OOP'suz Nesne — Kalıtım Yok, Bileşim Var</h2>
+<h2>4. OOP'suz Nesne — Kalıtım Yok, Bileşim Var</h2>
 <pre><code>struct Point
     numeric x; numeric y
 end struct
@@ -96,7 +87,7 @@ end struct
 -- MELP: bileşim > kalıtım</code></pre>
 <p>Sınıf, kalıtım, virtual method yok. <strong>Struct + fonksiyon.</strong> Daha basit, daha hızlı.</p>
 
-<h2>6. Debug Block — Tasarım Zamanı IDE İletişimi</h2>
+<h2>5. Debug Block — Tasarım Zamanı IDE İletişimi</h2>
 <pre><code>debug
     external ide
     ide_inspect(members_count)
@@ -107,7 +98,7 @@ end struct
 end debug</code></pre>
 <p>Release'de <strong>sıfır maliyetle</strong> strip edilir. Debug'da IDE ile konuşur.</p>
 
-<h2>7. Performans — C ile Aynı Ligde</h2>
+<h2>6. Performans — C ile Aynı Ligde</h2>
 <p>MELP "C'den hızlı" iddiasında değildir. Hedefi <strong>sürprizsiz, C
 ligi performansı</strong>: aynı asimptotik sınıf, ölçülebilir sabit fark.
 Aşağıdaki sayılar protokollüdür (<code>-O2</code>, en iyi/3, adil C referansı).</p>
@@ -130,10 +121,13 @@ anlamına gelmez.</em></p>
 <tr><td>Self-hosting</td><td class="win">✅</td><td class="win">✅</td><td class="win">✅</td><td class="win">✅</td></tr>
 <tr><td>Çok dilli</td><td class="win">✅ 6 dil</td><td class="lose">❌</td><td class="lose">❌</td><td class="lose">❌</td></tr>
 <tr><td>Debug block</td><td class="win">✅</td><td class="lose">❌</td><td class="lose">❌</td><td class="lose">❌</td></tr>
-<tr><td>OK/STO/SAO</td><td class="win">✅ plug-and-play</td><td>MIR/HIR</td><td class="lose">❌</td><td class="lose">❌</td></tr>
+<tr><td>Freeze/karantina</td><td class="win">🔬 scope dondurma*</td><td class="lose">❌</td><td class="lose">❌</td><td class="lose">❌</td></tr>
 <tr><td>OOP'suz</td><td class="win">✅</td><td>Traits</td><td>Interface</td><td class="lose">❌</td></tr>
 <tr><td>Öğrenme eğrisi</td><td class="win">Düşük</td><td>Yüksek</td><td>Orta</td><td>Orta</td></tr>
 </table>
+<p style="font-size:0.85em;color:#8b949e;"><em>* Freeze bugün host API üzerinden
+çalışır (scope dondurma/çözme, seçici); dil sözdizimine tam entegrasyonu
+geliştirme aşamasındadır — bu yüzden 🔬 (kısmî) damgalıdır.</em></p>
 
 <p style="text-align:center;color:#8b949e;margin-top:40px;">MELP — Karmaşıklık olmadan güvenlik. 🚀</p>
 
