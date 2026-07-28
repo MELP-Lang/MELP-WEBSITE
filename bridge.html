@@ -127,8 +127,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .tab.active { background: rgba(46,204,113,0.12); border-color: var(--bridge); color: var(--bridge); }
 
 .dim { color: var(--ink-dim); font-size: 0.82rem; }
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
@@ -539,7 +537,7 @@ function runBridgeWasm() {
         var cls = item.cls || '';
         var msg = item.msg || '';
         var t = (_totalDelay / 1000).toFixed(3) + 's';
-        out.innerHTML += '<div class="line ' + cls + '" style="animation: fadeIn 0.2s ease-out"><span class="dim">[' + t + ']</span> ' + msg + '</div>';
+        out.innerHTML += '<div class="line ' + cls + '"><span class="dim">[' + t + ']</span> ' + msg + '</div>';
         out.scrollTop = out.scrollHeight;
       }
       setTimeout(_next, item.delay || 100);
