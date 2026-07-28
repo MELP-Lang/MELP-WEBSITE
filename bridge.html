@@ -353,6 +353,11 @@ function runBridgeWasm() {
   }).then(function(bytes) {
     status.textContent = 'WASM yuklendi (' + (bytes.byteLength/1024).toFixed(1) + 'KB)';
     var env = {
+      // WASM bridge virtual socket stubs
+      mlp_socket_create: function() { return 3n; },
+      mlp_socket_connect: function(fd, addr, port) { return 0n; },
+      mlp_socket_send: function(fd, dataPtr) { return 16n; },
+      mlp_socket_recv: function(fd, max) { return 1024n; },
       pg_emit: function(ptr, len) { appendOutput(emitText(ptr, len)); },
       println: function(ptr) { appendOutput(emitText(ptr, 512)); return 0n; },
       str_eq: function(a, b) { return BigInt(a === b ? 1 : 0); },
