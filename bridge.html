@@ -93,6 +93,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   max-height: 300px; overflow-y: auto; line-height: 1.5;
 }
 .console .line { padding: 1px 0; }
+.console .line.dim { color: var(--ink-dim); }
 .console .can { color: var(--can); }
 .console .eth { color: var(--eth); }
 .console .bridge { color: var(--bridge); }
@@ -126,6 +127,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .tab.active { background: rgba(46,204,113,0.12); border-color: var(--bridge); color: var(--bridge); }
 
 .dim { color: var(--ink-dim); font-size: 0.82rem; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
@@ -345,12 +348,13 @@ function runBridgeWasm() {
   var out = document.getElementById('wasmOutput');
   var status = document.getElementById('wasmStatus');
   btn.disabled = true;
-  _animStopped = true;  // stop static animation
+  _animStopped = true;
   status.textContent = 'yukleniyor...';
+  status.style.color = '';
   out.style.display = 'block';
   out.innerHTML = '';
 
-  // Reset all indicators to "waiting"
+  // Reset indicators
   document.getElementById('canStatus').textContent = 'bekliyor';
   document.getElementById('canStatus').className = 'status status-idle';
   document.getElementById('bridgeStatus').textContent = 'hazır';
@@ -362,28 +366,29 @@ function runBridgeWasm() {
   document.getElementById('statLeak').textContent = '0';
   document.getElementById('statGc').textContent = '0ms';
 
-  // Log helpers with timestamp
-  var _t0 = performance.now();
-  function _t() { return ((performance.now() - _t0)/1000).toFixed(3) + 's'; }
-  function _log(cls, msg) {
-    out.innerHTML += '<div class="line ' + cls + '"><span class="dim">[' + _t() + ']</span> ' + msg + '</div>';
-    out.scrollTop = out.scrollHeight;
-  }
-  function _spin(ms) {  // synchronous delay for demo visibility
-    var end = performance.now() + ms;
-    while (performance.now() < end) { /* busy-wait */ }
-  }
-  // Force DOM repaint between steps
-  function _flush() { out.offsetHeight; }
+  // Replay queue: collect steps, then animate with setTimeout
+  var _queue = [];  // {cls, msg} or {action: fn, delay: ms}
+  var _tBase = 0;
+
+  function _log(cls, msg)     { _queue.push({cls: cls, msg: msg}); }
+  function _emit(cls, msg, delay) { _queue.push({cls: cls, msg: msg, delay: delay || 0}); }
+  function _dom(delay, fn)    { _queue.push({delay: delay, action: fn}); }
+  function _label(msg)        { _queue.push({cls: 'dim', msg: msg}); }
+
+  // Explanation banner at top
+  _label('⏱️ Görsel takip için süre ~100 kat artırılmıştır (demo modu).');
+  _label('   Gerçek çalışma süresi: < 1ms (sanal soket, bellek içi).');
+  _emit('dim', '---');
 
   fetch('wasm/bridge.wasm').then(function(resp) {
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     return resp.arrayBuffer();
   }).then(function(bytes) {
     status.textContent = 'WASM yuklendi (' + (bytes.byteLength/1024).toFixed(1) + 'KB)';
-    _log('dim', '🌉 MELP Bridge WASM baslatiliyor...');
-    _log('dim', 'Golden: 62b19b76 | STAGE10 FAZ B');
-    _flush();
+    _emit('dim', '🌉 MELP Bridge WASM başlatılıyor...');
+    _emit('dim', 'Golden: 62b19b76 | STAGE10 FAZ B');
+    _label('---');
+    _emit('bridge', '🚀 pg_start() çağrılıyor...', 200);
 
     // WASM memory helpers — lazy init
     var _m = null;
@@ -402,68 +407,68 @@ function runBridgeWasm() {
     }
     var STR_BUF = 0x4000n, CAT_BUF = 0x4400n, CAN_BUF = 0x4800n;
 
-    // Step counter to know which socket call we're in
+    // Step counter for socket ops
     var _step = 0;
 
     var env = {
       mlp_socket_create: function() {
         _step++;
         if (_step === 1) {
-          _spin(150); _log('can', '🔌 CAN soket aciliyor...');
-          document.getElementById('canStatus').textContent = 'aciliyor...';
-          document.getElementById('canStatus').className = 'status status-live';
-          _flush(); _spin(200);
-          _log('can', '  ✓ CAN soket acildi (fd=3)');
+          _emit('can', '🔌 CAN soket açılıyor...', 300);
+          _dom(200, function() {
+            document.getElementById('canStatus').textContent = 'açılıyor...';
+            document.getElementById('canStatus').className = 'status status-live';
+          });
+          _emit('can', '  ✓ CAN soket açıldı (fd=3)', 300);
           return 3n;
         } else {
-          _spin(150); _log('eth', '🌐 ETH soket aciliyor...');
-          document.getElementById('ethStatus').textContent = 'aciliyor...';
-          document.getElementById('ethStatus').className = 'status status-live';
-          _flush(); _spin(200);
-          _log('eth', '  ✓ ETH soket acildi (fd=4)');
+          _emit('eth', '🌐 ETH soket açılıyor...', 300);
+          _dom(200, function() {
+            document.getElementById('ethStatus').textContent = 'açılıyor...';
+            document.getElementById('ethStatus').className = 'status status-live';
+          });
+          _emit('eth', '  ✓ ETH soket açıldı (fd=4)', 300);
           return 4n;
         }
       },
       mlp_socket_connect: function(fd, addr, port) {
-        _spin(150);
         if (Number(port) === 9001) {
-          _log('can', '🔗 CAN baglaniyor... 127.0.0.1:9001');
-          _flush(); _spin(200);
-          document.getElementById('canStatus').textContent = 'baglandi';
-          _log('can', '  ✓ CAN baglandi (port 9001)');
+          _emit('can', '🔗 CAN bağlanıyor... 127.0.0.1:9001', 400);
+          _dom(300, function() {
+            document.getElementById('canStatus').textContent = 'bağlandı';
+          });
+          _emit('can', '  ✓ CAN bağlandı (port 9001)', 400);
         } else {
-          _log('eth', '🔗 ETH baglaniyor... 127.0.0.1:9002');
-          _flush(); _spin(200);
-          document.getElementById('ethStatus').textContent = 'baglandi';
-          _log('eth', '  ✓ ETH baglandi (port 9002)');
+          _emit('eth', '🔗 ETH bağlanıyor... 127.0.0.1:9002', 400);
+          _dom(300, function() {
+            document.getElementById('ethStatus').textContent = 'bağlandı';
+          });
+          _emit('eth', '  ✓ ETH bağlandı (port 9002)', 400);
         }
-        _flush();
         return 0n;
       },
       mlp_socket_recv: function(fd, max) {
-        _spin(200);
-        _log('bridge', '📥 CAN mesaj bekleniyor...');
-        _flush(); _spin(200);
+        _emit('bridge', '📥 CAN mesaj bekleniyor...', 400);
         var msg = 'CAN:hello_bridge';
-        _log('can', '  ← CAN:hello_bridge');
-        document.getElementById('canStatus').textContent = '✓';
-        document.getElementById('bridgeStatus').textContent = 'alindi';
-        document.getElementById('bridgeStatus').className = 'status status-live';
-        document.getElementById('statMsg').textContent = msg;
-        _flush();
+        _emit('can', '  ← CAN:hello_bridge', 400);
+        _dom(300, function() {
+          document.getElementById('canStatus').textContent = '✓';
+          document.getElementById('bridgeStatus').textContent = 'alındı';
+          document.getElementById('bridgeStatus').className = 'status status-live';
+          document.getElementById('statMsg').textContent = msg;
+        });
         return _ws(CAN_BUF, msg);
       },
       mlp_socket_send: function(fd, dataPtr) {
-        _spin(150);
         var msg = _rs(dataPtr);
-        _log('bridge', '📤 ETH\'ye iletiliyor...');
-        _flush(); _spin(200);
-        _log('eth', '  → ' + msg);
-        document.getElementById('ethStatus').textContent = '✓';
-        document.getElementById('bridgeStatus').textContent = 'PASS';
-        document.getElementById('bridgeStatus').className = 'status status-live';
-        document.getElementById('statMsg').textContent = 'BRIDGE_POC_PASS';
-        _flush();
+        _emit('bridge', '📤 ETH\'ye iletiliyor...', 400);
+        _emit('eth', '  → ' + msg, 400);
+        _dom(300, function() {
+          document.getElementById('ethStatus').textContent = '✓';
+          document.getElementById('bridgeStatus').textContent = 'PASS';
+          document.getElementById('bridgeStatus').className = 'status status-live';
+          document.getElementById('statMsg').textContent = 'BRIDGE_POC_PASS';
+        });
         return 16n;
       },
       str: function(n) { return _ws(STR_BUF, String(Number(n))); },
@@ -475,19 +480,17 @@ function runBridgeWasm() {
       },
       str_eq: function(a, b) { return BigInt(_rs(a) === _rs(b) ? 1 : 0); },
       melp_string_concat: function(a, b) { return _ws(CAT_BUF, _rs(a) + _rs(b)); },
-      print: function(ptr) { appendOutput(_rs(ptr)); return 0n; },
+      print: function(ptr)  { _emit('dim', _rs(ptr), 100); return 0n; },
       println: function(ptr) {
-        _spin(100);
         var txt = _rs(ptr);
         if (txt.indexOf('PASS') >= 0) {
-          _log('pass', '✅ ' + txt);
+          _emit('pass', '✅ ' + txt, 300);
         } else {
-          _log('dim', txt);
+          _emit('dim', txt, 100);
         }
-        _flush();
         return 0n;
       },
-      pg_emit: function(ptr, len) { appendOutput(emitText(ptr, len)); },
+      pg_emit: function(ptr, len) { _emit('dim', emitText(ptr, len), 50); },
       strlen_melp: function(ptr) {
         if (!_m) _m = new Uint8Array(wasmBuf);
         var e = Number(ptr);
@@ -496,25 +499,56 @@ function runBridgeWasm() {
       },
       str_impl: function(n) { return _ws(STR_BUF, String(Number(n))); },
       chr_impl: function(n) { return _ws(STR_BUF, String.fromCharCode(Number(n))); },
-      puts: function(ptr) { appendOutput(_rs(ptr)); return 0n; }
+      puts: function(ptr) { _emit('dim', _rs(ptr), 50); return 0n; }
     };
     return WebAssembly.instantiate(bytes, { env: env });
   }).then(function(result) {
     wasmBridge = result.instance;
     wasmBuf = wasmBridge.exports.memory.buffer;
-    _log('dim', '---');
-    _log('bridge', '🚀 pg_start() cagriliyor...');
-    _flush(); _spin(200);
+
+    // Run WASM at FULL SPEED — queue collects all steps
     var exitCode = wasmBridge.exports.pg_start();
-    _spin(200);
-    _log('dim', '---');
+
+    // Add completion steps
+    _label('---');
     if (exitCode === 0n) {
-      _log('pass', '🎉 BRIDGE POC TEST PASSED');
-      _log('dim', 'sizinti: 0 · dangling: 0 · cleanup kodu: 0 satir');
+      _emit('pass', '🎉 BRIDGE POC TEST PASSED', 500);
+      _emit('dim', 'sızıntı: 0 · dangling: 0 · cleanup kodu: 0 satır', 300);
     }
-    status.textContent = 'tamamlandi (exit: ' + exitCode + ')';
-    status.style.color = exitCode === 0n ? 'var(--good)' : 'var(--err)';
-    btn.disabled = false;
+
+    // ——— REPLAY queue with setTimeout for smooth animation ———
+    out.innerHTML = '';  // clear, will rebuild step by step
+    var _i = 0;
+    var _totalDelay = 0;
+
+    function _next() {
+      if (_i >= _queue.length) {
+        status.textContent = 'tamamlandı (exit: ' + exitCode + ')';
+        status.style.color = exitCode === 0n ? 'var(--good)' : 'var(--err)';
+        btn.disabled = false;
+        return;
+      }
+      var item = _queue[_i++];
+
+      if (item.action) {
+        // DOM action
+        if (item.delay) _totalDelay += item.delay;
+        item.action();
+      } else {
+        // Log line
+        var delay = item.delay || 100;
+        _totalDelay += delay;
+        var cls = item.cls || '';
+        var msg = item.msg || '';
+        var t = (_totalDelay / 1000).toFixed(3) + 's';
+        out.innerHTML += '<div class="line ' + cls + '" style="animation: fadeIn 0.2s ease-out"><span class="dim">[' + t + ']</span> ' + msg + '</div>';
+        out.scrollTop = out.scrollHeight;
+      }
+      setTimeout(_next, item.delay || 100);
+    }
+
+    status.textContent = 'canlandırılıyor...';
+    _next();
   }).catch(function(e) {
     status.textContent = 'hata: ' + e.message;
     status.style.color = 'var(--err)';
