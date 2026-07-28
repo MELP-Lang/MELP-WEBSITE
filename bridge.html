@@ -184,6 +184,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <button class="tab active" data-tab="code">📝 Bridge Kodu</button>
       <button class="tab" data-tab="output">📤 Gerçek Çıktı</button>
       <button class="tab" data-tab="concept">💡 Neden MELP?</button>
+      <button class="tab" data-tab="freeze">🧊 Freeze Demo</button>
     </div>
 
     <!-- Tab: Code -->
@@ -323,6 +324,34 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       </div>
     </div>
 
+    <!-- Tab: Freeze Demo -->
+    <div id="tab-freeze" style="display:none">
+      <div class="code-block" style="padding:20px">
+        <h3 style="margin-bottom:4px;color:var(--bridge)">🧊 MELP Freeze — Çalışan sistemi dondur, incele, devam ettir</h3>
+        <p style="color:var(--ink-dim);line-height:1.7;margin-bottom:20px;font-size:0.88rem">
+          MELP'te <strong>freeze</strong> bir scope'un tüm state'ini atomik olarak dondurur.
+          Dondurulan kanalın tüm değişkenleri, soket buffer'ları, bağlantı bilgileri <strong style="color:var(--bridge)">bellekte korunur</strong>.
+          Diğer kanallar çalışmaya devam eder. Bu, canlı sistemde forensic analiz yapmanın tek yoludur.
+        </p>
+
+        <!-- Channel grid -->
+        <div id="freezeChannels" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:16px">
+        </div>
+
+        <!-- Global controls -->
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+          <button class="btn" id="freezeStartAll" style="font-size:0.82rem">▶ Tüm Kanalları Başlat</button>
+          <button class="btn" id="freezeStopAll" style="font-size:0.82rem;display:none">⏹ Tümünü Durdur</button>
+          <span id="freezeGlobalStatus" class="dim" style="font-size:0.78rem"></span>
+        </div>
+
+        <!-- Event log -->
+        <div class="console" id="freezeLog" style="max-height:200px;font-size:0.75rem;margin-top:12px">
+          <div class="line dim">🧊 Freeze Demo hazır. "Tüm Kanalları Başlat" ile başlayın.</div>
+        </div>
+      </div>
+    </div>
+
     <p class="dim" style="text-align:center;margin-top:40px">
       Gerçek çıktı: <code>bash demos/FAZ_B/run_bridge_test.sh</code> ile üretildi · 
       <a href="demo.html" style="color:var(--bridge)">← Canlı Demo</a>
@@ -339,6 +368,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         document.getElementById('tab-code').style.display = tab === 'code' ? '' : 'none';
         document.getElementById('tab-output').style.display = tab === 'output' ? '' : 'none';
         document.getElementById('tab-concept').style.display = tab === 'concept' ? '' : 'none';
+        document.getElementById('tab-freeze').style.display = tab === 'freeze' ? '' : 'none';
+        if (tab === 'freeze' && !_freezeInit) { _freezeInit = true; initFreezeDemo(); }
       });
     });
 
@@ -368,6 +399,165 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         document.getElementById('statMsg').textContent = 'BRIDGE_POC_PASS';
       }
     }, 1500);
+
+    // ——— 🧊 Freeze Demo Simulation ———
+    var _freezeInit = false;
+    var _freezeIntervals = {};
+    var _freezeStates = {};
+
+    function _freezeLog(cls, msg) {
+      var el = document.getElementById('freezeLog');
+      var t = new Date().toLocaleTimeString();
+      el.innerHTML += '<div class="line ' + (cls||'') + '"><span class="dim">[' + t + ']</span> ' + msg + '</div>';
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function _freezeUpdateUI() {
+      var container = document.getElementById('freezeChannels');
+      var allRunning = true, anyRunning = false;
+      var html = '';
+      for (var id in _freezeStates) {
+        var ch = _freezeStates[id];
+        var frozen = ch.frozen;
+        var border = frozen ? '2px solid #00bcd4' : '1px solid var(--border)';
+        var bg = frozen ? 'rgba(0,188,212,0.06)' : 'var(--card)';
+        var statusIcon = frozen ? '🧊 DONMUS' : (ch.running ? '🟢 Canlı' : '⚫ Durdu');
+        var statusColor = frozen ? '#00bcd4' : (ch.running ? 'var(--good)' : 'var(--ink-dim)');
+        if (!ch.running && !frozen) allRunning = false;
+        if (ch.running || frozen) anyRunning = true;
+
+        html += '<div style="background:' + bg + ';border:' + border + ';border-radius:10px;padding:14px;position:relative">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+        html += '<div><strong style="font-size:0.9rem">' + ch.icon + ' ' + ch.name + '</strong>';
+        html += '<div style="font-size:0.7rem;color:var(--ink-dim)">' + ch.desc + '</div></div>';
+        html += '<div style="font-size:0.78rem;color:' + statusColor + ';font-weight:600">' + statusIcon + '</div></div>';
+
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;color:var(--ink-dim);margin-bottom:8px">';
+        html += '<div>📨 Mesaj: <strong style="color:var(--ink)">' + ch.msgCount + '</strong></div>';
+        html += '<div>🔗 Port: <strong style="color:var(--ink)">' + ch.port + '</strong></div>';
+        html += '<div>📥 Son IP: <strong style="color:var(--ink)">' + (ch.lastIP || '—') + '</strong></div>';
+        html += '<div>📦 Buffer: <strong style="color:var(--ink)">' + ch.bufferLen + 'B</strong></div>';
+        if (frozen) {
+          html += '<div style="grid-column:1/-1;margin-top:4px;padding:4px 8px;background:rgba(0,188,212,0.1);border-radius:4px;font-size:0.68rem">';
+          html += '🔒 <strong style="color:#00bcd4">Freeze snapshot:</strong> IP=' + ch.snapshotIP + ' | Payload=' + ch.snapshotPayload + ' | Timestamp=' + ch.snapshotTime;
+          html += '</div>';
+        }
+        html += '</div>';
+
+        html += '<div style="display:flex;gap:6px">';
+        if (frozen) {
+          html += '<button class="btn" onclick="_freezeUnfreeze(\'' + id + '\')" style="font-size:0.7rem;padding:4px 12px;border-color:#00bcd4;color:#00bcd4">▶ Çözdür</button>';
+        } else if (ch.running) {
+          html += '<button class="btn" onclick="_freezeChannel(\'' + id + '\')" style="font-size:0.7rem;padding:4px 12px">🧊 Dondur</button>';
+        }
+        html += '<button class="btn" onclick="_freezeSimAttack(\'' + id + '\')" style="font-size:0.7rem;padding:4px 12px;border-color:var(--err);color:var(--err)" ' + (ch.running ? '' : 'disabled') + '>⚠️ Saldırı Simüle Et</button>';
+        html += '</div></div>';
+      }
+
+      container.innerHTML = html;
+
+      // Update global buttons
+      document.getElementById('freezeStartAll').style.display = allRunning ? 'none' : '';
+      document.getElementById('freezeStopAll').style.display = anyRunning ? '' : 'none';
+      document.getElementById('freezeGlobalStatus').textContent = anyRunning ? '🟢 Sistem çalışıyor' : '⚫ Sistem durdu';
+    }
+
+    function _freezeChannel(id) {
+      var ch = _freezeStates[id];
+      if (!ch || !ch.running || ch.frozen) return;
+      // Stop the interval, keep the state
+      clearInterval(_freezeIntervals[id]);
+      ch.running = false;
+      ch.frozen = true;
+      ch.snapshotTime = new Date().toLocaleTimeString();
+      _freezeLog('', '🧊 <strong>' + ch.name + '</strong> DONDURULDU — tüm state bellekte korunuyor. Diğer kanallar çalışıyor.');
+      _freezeUpdateUI();
+    }
+
+    function _freezeUnfreeze(id) {
+      var ch = _freezeStates[id];
+      if (!ch || !ch.frozen) return;
+      ch.frozen = false;
+      ch.running = true;
+      _freezeLog('bridge', '▶ <strong>' + ch.name + '</strong> çözüldü — kaldığı yerden devam ediyor (IP: ' + ch.lastIP + ', buffer: ' + ch.bufferLen + 'B)');
+      _freezeStartChannel(id);
+      _freezeUpdateUI();
+    }
+
+    function _freezeSimAttack(id) {
+      var ch = _freezeStates[id];
+      if (!ch || !ch.running || ch.frozen) return;
+
+      // Simulate attack: inject malicious IP and payload into the channel state
+      var attackIPs = ['45.33.32.156', '185.220.101.34', '91.121.87.10', '103.224.182.253'];
+      var attackPayloads = ['0xDEADBEEF', 'DROP TABLE', '../etc/passwd', '<script>alert(1)'];
+      var ip = attackIPs[Math.floor(Math.random() * attackIPs.length)];
+      var payload = attackPayloads[Math.floor(Math.random() * attackPayloads.length)];
+
+      ch.lastIP = ip;
+      ch.snapshotIP = ip;
+      ch.snapshotPayload = payload;
+      ch.snapshotTime = new Date().toLocaleTimeString();
+
+      _freezeLog('can', '⚠️ <strong>UYARI:</strong> ' + ch.name + ' kanalında şüpheli trafik! Kaynak IP: <strong style="color:var(--err)">' + ip + '</strong>');
+      _freezeLog('can', '🔍 Payload incelemesi: <code style="color:var(--err)">' + payload + '</code> — şüpheli imza tespit edildi.');
+
+      // Auto-freeze after a short delay
+      setTimeout(function() {
+        _freezeChannel(id);
+        _freezeLog('can', '🛡️ <strong>' + ch.name + '</strong> otomatik FREEZE — adli analiz için tüm state korundu.');
+        _freezeLog('dim', '   Saldırgan IP: <strong style="color:var(--err)">' + ip + '</strong> | Payload: <code>' + payload + '</code> | Buffer: ' + ch.bufferLen + 'B');
+        _freezeLog('dim', '   ✨ MELP freeze sayesinde saldırganın tüm organik bilgileri HALEN bellekte. C/Rust/Go\'da bu mümkün değil.');
+      }, 1200);
+    }
+
+    function _freezeStartChannel(id) {
+      var ch = _freezeStates[id];
+      if (ch.frozen) return;
+      ch.running = true;
+      _freezeIntervals[id] = setInterval(function() {
+        ch.msgCount++;
+        ch.bufferLen = Math.floor(Math.random() * 200) + 50;
+        // Simulate receiving from random IPs
+        var ips = ['10.0.0.' + (Math.floor(Math.random() * 20) + 1), '172.16.0.' + (Math.floor(Math.random() * 50) + 1), '192.168.1.' + (Math.floor(Math.random() * 100) + 1)];
+        ch.lastIP = ips[Math.floor(Math.random() * ips.length)];
+        _freezeUpdateUI();
+      }, 800 + Math.random() * 400); // 0.8-1.2s per message
+    }
+
+    function initFreezeDemo() {
+      // Define channels
+      var channels = [
+        { id: 'c1', name: 'HTTP API', icon: '🌐', desc: 'REST API gateway', port: 9001, msgCount: 0, bufferLen: 0, lastIP: '—', running: false, frozen: false, snapshotIP: '', snapshotPayload: '', snapshotTime: '' },
+        { id: 'c2', name: 'MQTT Broker', icon: '📡', desc: 'IoT telemetri', port: 9002, msgCount: 0, bufferLen: 0, lastIP: '—', running: false, frozen: false, snapshotIP: '', snapshotPayload: '', snapshotTime: '' },
+        { id: 'c3', name: 'Syslog', icon: '📋', desc: 'Sistem logları', port: 9003, msgCount: 0, bufferLen: 0, lastIP: '—', running: false, frozen: false, snapshotIP: '', snapshotPayload: '', snapshotTime: '' }
+      ];
+
+      channels.forEach(function(ch) { _freezeStates[ch.id] = ch; });
+      _freezeUpdateUI();
+
+      document.getElementById('freezeStartAll').addEventListener('click', function() {
+        _freezeLog('bridge', '▶ Tüm kanallar başlatılıyor...');
+        for (var id in _freezeStates) {
+          if (!_freezeStates[id].running && !_freezeStates[id].frozen) {
+            _freezeStartChannel(id);
+          }
+        }
+        _freezeUpdateUI();
+        _freezeLog('dim', '   Her kanal 0.8-1.2 saniyede bir mesaj işliyor. "Dondur" veya "Saldırı Simüle Et" ile test edin.');
+      });
+
+      document.getElementById('freezeStopAll').addEventListener('click', function() {
+        for (var id in _freezeIntervals) {
+          clearInterval(_freezeIntervals[id]);
+          _freezeStates[id].running = false;
+          _freezeStates[id].frozen = false;
+        }
+        _freezeIntervals = {};
+        _freezeLog('dim', '⏹ Tüm kanallar durduruldu.');
+        _freezeUpdateUI();
+      });
+    }
   </script>
 </body>
 </html>
