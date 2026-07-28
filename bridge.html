@@ -369,6 +369,7 @@ function runBridgeWasm() {
 
   // Replay queue: collect steps, then animate with setTimeout
   var _queue = [];  // {cls, msg} or {action: fn, delay: ms}
+  var _SPEED = 3;   // demo yavaşlatma çarpanı (1 = gerçek hızda)
   var _tBase = 0;
 
   function _emit(cls, msg, delay) { _queue.push({cls: cls, msg: msg, delay: delay || 0}); }
@@ -525,22 +526,22 @@ function runBridgeWasm() {
         return;
       }
       var item = _queue[_i++];
+      var d = (item.delay || 100) * _SPEED;
 
       if (item.action) {
         // DOM action
-        if (item.delay) _totalDelay += item.delay;
+        _totalDelay += d;
         item.action();
       } else {
         // Log line
-        var delay = item.delay || 100;
-        _totalDelay += delay;
+        _totalDelay += d;
         var cls = item.cls || '';
         var msg = item.msg || '';
         var t = (_totalDelay / 1000).toFixed(3) + 's';
         out.innerHTML += '<div class="line ' + cls + '"><span class="dim">[' + t + ']</span> ' + msg + '</div>';
         out.scrollTop = out.scrollHeight;
       }
-      setTimeout(_next, item.delay || 100);
+      setTimeout(_next, d);
     }
 
     status.textContent = 'canlandırılıyor...';
