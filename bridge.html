@@ -352,25 +352,53 @@ function runBridgeWasm() {
     return resp.arrayBuffer();
   }).then(function(bytes) {
     status.textContent = 'WASM yuklendi (' + (bytes.byteLength/1024).toFixed(1) + 'KB)';
+
+    // WASM memory helpers — lazy init, WASM memory available before pg_start()
+    var _m = null;  // Uint8Array view of wasmBuf, init'd on first env call
+    function _rs(ptr) {  // read C-string from WASM memory
+      if (!_m) _m = new Uint8Array(wasmBuf);
+      var p = Number(ptr), e = p;
+      while (e < _m.length && _m[e]) e++;
+      return new TextDecoder().decode(_m.slice(p, e));
+    }
+    function _ws(ptr, s) {  // write C-string into WASM memory, return ptr
+      if (!_m) _m = new Uint8Array(wasmBuf);
+      var p = Number(ptr);
+      for (var i = 0; i < s.length; i++) _m[p + i] = s.charCodeAt(i) & 0xFF;
+      _m[p + s.length] = 0;
+      return ptr;
+    }
+    // Fixed buffers in WASM heap (well above code/data, within 1 page = 64KB)
+    var STR_BUF = 0x4000n;    // 16KB
+    var CAT_BUF = 0x4400n;    // 17.4KB
+    var CAN_BUF = 0x4800n;    // 18.4KB
+
     var env = {
-      // WASM bridge virtual socket stubs
       mlp_socket_create: function() { return 3n; },
       mlp_socket_connect: function(fd, addr, port) { return 0n; },
       mlp_socket_send: function(fd, dataPtr) { return 16n; },
-      mlp_socket_recv: function(fd, max) { return 1024n; },
-      str: function(n) { return n; },
-      pg_emit: function(ptr, len) { appendOutput(emitText(ptr, len)); },
-      println: function(ptr) { appendOutput(emitText(ptr, 512)); return 0n; },
-      str_eq: function(a, b) { return BigInt(a === b ? 1 : 0); },
-      strlen_melp: function(ptr) {
-        var mem = new Uint8Array(bytes, 0); var end = Number(ptr);
-        while (end < mem.length && mem[end]) end++;
-        return BigInt(end - Number(ptr));
+      mlp_socket_recv: function(fd, max) { return _ws(CAN_BUF, 'CAN:hello_bridge'); },
+      str: function(n) { return _ws(STR_BUF, String(Number(n))); },
+      len: function(ptr) {
+        if (!_m) _m = new Uint8Array(wasmBuf);
+        var e = Number(ptr);
+        while (e < _m.length && _m[e]) e++;
+        return BigInt(e - Number(ptr));
       },
-      str_impl: function(n) { return n; },
-      chr_impl: function(n) { return n; },
-      melp_string_concat: function(a, b) { return a; },
-      puts: function(ptr) { appendOutput(emitText(ptr, 512)); return 0n; }
+      str_eq: function(a, b) { return BigInt(_rs(a) === _rs(b) ? 1 : 0); },
+      melp_string_concat: function(a, b) { return _ws(CAT_BUF, _rs(a) + _rs(b)); },
+      print: function(ptr) { appendOutput(_rs(ptr)); return 0n; },
+      println: function(ptr) { appendOutput(_rs(ptr)); return 0n; },
+      pg_emit: function(ptr, len) { appendOutput(emitText(ptr, len)); },
+      strlen_melp: function(ptr) {
+        if (!_m) _m = new Uint8Array(wasmBuf);
+        var e = Number(ptr);
+        while (e < _m.length && _m[e]) e++;
+        return BigInt(e - Number(ptr));
+      },
+      str_impl: function(n) { return _ws(STR_BUF, String(Number(n))); },
+      chr_impl: function(n) { return _ws(STR_BUF, String.fromCharCode(Number(n))); },
+      puts: function(ptr) { appendOutput(_rs(ptr)); return 0n; }
     };
     return WebAssembly.instantiate(bytes, { env: env });
   }).then(function(result) {
