@@ -1,0 +1,61 @@
+-- bridge_wasm.mlp — CAN→ETH Bridge (virtual sockets, WASM)
+external function mlp_socket_create() as numeric
+external function mlp_socket_connect(numeric fd; string addr; numeric port) as numeric
+external function mlp_socket_send(numeric fd; string data) as numeric
+external function mlp_socket_recv(numeric fd; numeric max_bytes) as string
+external function println(string s) as numeric
+external function str(numeric n) as string
+
+numeric function main()
+    println("")
+    println("=== MELP Bridge POC: CAN -> ETH ===")
+
+    -- CAN tarafi
+    numeric can_fd = mlp_socket_create()
+    if can_fd < 0 then
+        println("FAIL: CAN socket create")
+        return 1
+    end if
+    println("[BRIDGE] CAN socket: " & str(can_fd))
+
+    numeric rc = mlp_socket_connect(can_fd; "127.0.0.1"; 9001)
+    if rc != 0 then
+        println("FAIL: CAN connect")
+        return 1
+    end if
+    println("[BRIDGE] CAN connected to port 9001")
+
+    -- ETH tarafi
+    numeric eth_fd = mlp_socket_create()
+    if eth_fd < 0 then
+        println("FAIL: ETH socket create")
+        return 1
+    end if
+    println("[BRIDGE] ETH socket: " & str(eth_fd))
+
+    rc = mlp_socket_connect(eth_fd; "127.0.0.1"; 9002)
+    if rc != 0 then
+        println("FAIL: ETH connect")
+        return 1
+    end if
+    println("[BRIDGE] ETH connected to port 9002")
+
+    println("[BRIDGE] Bridge aktif — CAN mesaji bekleniyor...")
+
+    -- CAN'dan mesaj al
+    string can_msg = mlp_socket_recv(can_fd; 256)
+    if str_eq(can_msg; "") == 1 then
+        println("[BRIDGE] FAIL — CAN'dan mesaj alinamadi")
+        return 1
+    end if
+
+    println("  CAN -> ETH: '" & can_msg & "'")
+
+    -- ETH'ye ilet
+    numeric sent = mlp_socket_send(eth_fd; "BRIDGE_MSG: " & can_msg)
+    println("  ETH sent: " & str(sent) & " byte")
+
+    println("[BRIDGE] ✅ Bridge POC PASS — mesaj iletildi")
+    println("BRIDGE_POC_PASS")
+    return 0
+end function

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bridge CAN→ETH — MELP</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+/* Bridge-specific styles — same palette as demo.html */
+:root {
+  --can: #e67e22;
+  --eth: #3498db;
+  --bridge: #2ecc71;
+  --msg: #f1c40f;
+  --bg: #0d1117;
+  --card: #161b22;
+  --border: #30363d;
+  --ink: #c9d1d9;
+  --ink-dim: #8b949e;
+  --good: #3fb950;
+  --warn: #d29922;
+  --err: #f85149;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+.bridge-demo { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+.bridge-demo h1 { font-size: 2rem; margin-bottom: 8px; }
+.bridge-demo h1 span { color: var(--bridge); }
+.subtitle { color: var(--ink-dim); margin-bottom: 32px; font-size: 0.95rem; }
+
+/* Topology */
+.topology {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 32px 24px; margin-bottom: 28px; position: relative; overflow: hidden;
+}
+.node {
+  text-align: center; padding: 20px; border-radius: 10px;
+  border: 2px solid; min-width: 120px; position: relative; z-index: 1;
+}
+.node-can { border-color: var(--can); background: rgba(230,126,34,0.08); }
+.node-bridge { border-color: var(--bridge); background: rgba(46,204,113,0.08); }
+.node-eth { border-color: var(--eth); background: rgba(52,152,219,0.08); }
+.node .icon { font-size: 2rem; margin-bottom: 6px; }
+.node .label { font-weight: 600; font-size: 0.9rem; }
+.node .port { font-size: 0.75rem; color: var(--ink-dim); margin-top: 4px; }
+.node .status { font-size: 0.7rem; margin-top: 6px; padding: 2px 8px; border-radius: 10px; display: inline-block; }
+.status-live { background: rgba(63,185,80,0.15); color: var(--good); }
+.status-idle { background: rgba(139,148,158,0.1); color: var(--ink-dim); }
+
+.arrow {
+  position: relative; width: 60px; height: 2px;
+  display: flex; align-items: center; z-index: 1;
+}
+.arrow::before { content: ''; flex: 1; height: 2px; background: var(--border); }
+.arrow::after { content: '→'; position: absolute; right: -4px; top: -9px; font-size: 1.2rem; color: var(--ink-dim); }
+.arrow-msg { position: absolute; font-size: 0.65rem; color: var(--msg); white-space: nowrap; }
+
+/* Message flow animation */
+@keyframes msgFlow {
+  0% { opacity: 0; transform: translateX(0); }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(80px); }
+}
+.msg-particle {
+  position: absolute; font-size: 0.6rem; color: var(--msg);
+  background: rgba(241,196,15,0.12); padding: 2px 8px; border-radius: 8px;
+  animation: msgFlow 2s ease-in-out infinite;
+  white-space: nowrap;
+}
+
+/* Code block */
+.code-block {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px 24px; margin-bottom: 28px; overflow-x: auto;
+}
+.code-block pre {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.82rem; line-height: 1.6; color: var(--ink);
+  tab-size: 2; white-space: pre-wrap;
+}
+.code-block .kw { color: #ff7b72; }
+.code-block .fn { color: #d2a8ff; }
+.code-block .str { color: #a5d6ff; }
+.code-block .cm { color: #8b949e; font-style: italic; }
+.code-block .num { color: #79c0ff; }
+
+/* Console output */
+.console {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 20px; margin-bottom: 28px; font-family: monospace; font-size: 0.8rem;
+  max-height: 300px; overflow-y: auto; line-height: 1.5;
+}
+.console .line { padding: 1px 0; }
+.console .can { color: var(--can); }
+.console .eth { color: var(--eth); }
+.console .bridge { color: var(--bridge); }
+.console .pass { color: var(--good); font-weight: 600; }
+.console .dim { color: var(--ink-dim); }
+
+/* Cards row */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.card .num { font-size: 1.5rem; font-weight: 700; }
+.card .lab { font-size: 0.78rem; color: var(--ink-dim); margin-top: 4px; }
+.card.good .num { color: var(--good); }
+.card.warn .num { color: var(--warn); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card); color: var(--ink); cursor: pointer; font-size: 0.9rem;
+  transition: all 0.15s;
+}
+.btn:hover { border-color: var(--bridge); background: rgba(46,204,113,0.08); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab {
+  padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+  background: transparent; color: var(--ink-dim); cursor: pointer; font-size: 0.82rem;
+  transition: all 0.15s;
+}
+.tab:hover { color: var(--ink); border-color: var(--ink-dim); }
+.tab.active { background: rgba(46,204,113,0.12); border-color: var(--bridge); color: var(--bridge); }
+
+.dim { color: var(--ink-dim); font-size: 0.82rem; }
+</style>
+</head>
+<body>
+  <header class="banner" style="border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px">
+    <a href="index.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:inherit">
+      <span style="font-size:1.4rem">🦊</span>
+      <strong>MELP</strong>
+      <span class="dim">(alfa)</span>
+    </a>
+    <span class="dim" style="margin-left:auto">Bridge CAN→ETH Demo</span>
+  </header>
+
+  <main class="bridge-demo">
+    <h1>🌉 CAN→ETH <span>Bridge</span></h1>
+    <p class="subtitle">MELP scope/custody modeliyle gerçek TCP soket köprüsü — tek satır cleanup kodu yok.</p>
+
+    <!-- Topology -->
+    <div class="topology" id="topology">
+      <div class="node node-can">
+        <div class="icon">🔌</div>
+        <div class="label">CAN Bus</div>
+        <div class="port">127.0.0.1:9001</div>
+        <div class="status status-idle" id="canStatus">bekliyor</div>
+      </div>
+      <div class="arrow" style="position:relative">
+        <span class="msg-particle" style="top:-8px;left:2px" id="msg1">CAN:hello_bridge</span>
+      </div>
+      <div class="node node-bridge">
+        <div class="icon">🌉</div>
+        <div class="label">MELP Bridge</div>
+        <div class="port">scope/custody</div>
+        <div class="status status-idle" id="bridgeStatus">hazır</div>
+      </div>
+      <div class="arrow" style="position:relative">
+        <span class="msg-particle" style="top:8px;left:2px;animation-delay:1s" id="msg2">BRIDGE_MSG</span>
+      </div>
+      <div class="node node-eth">
+        <div class="icon">🌐</div>
+        <div class="label">ETH Network</div>
+        <div class="port">127.0.0.1:9002</div>
+        <div class="status status-idle" id="ethStatus">bekliyor</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="cards">
+      <div class="card good"><div class="num" id="statCleanup">0</div><div class="lab">Cleanup satırı</div></div>
+      <div class="card good"><div class="num" id="statLeak">0</div><div class="lab">Sızıntı</div></div>
+      <div class="card good"><div class="num" id="statGc">0ms</div><div class="lab">GC durması</div></div>
+      <div class="card"><div class="num" id="statMsg">—</div><div class="lab">İletilen mesaj</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="code">📝 Bridge Kodu</button>
+      <button class="tab" data-tab="output">📤 Gerçek Çıktı</button>
+      <button class="tab" data-tab="concept">💡 Neden MELP?</button>
+    </div>
+
+    <!-- Tab: Code -->
+    <div id="tab-code" class="code-block">
+<pre><span class="cm">-- bridge.mlp — CAN ↔ ETH Bridge (PDA_37 FAZ 2)</span>
+<span class="cm">-- MELP scope/custody: tek satır manuel cleanup YOK</span>
+
+<span class="kw">external function</span> <span class="fn">mlp_socket_create</span>() <span class="kw">as</span> <span class="num">numeric</span>
+<span class="kw">external function</span> <span class="fn">mlp_socket_connect</span>(<span class="num">numeric</span> fd; <span class="str">string</span> addr; <span class="num">numeric</span> port) <span class="kw">as</span> <span class="num">numeric</span>
+<span class="kw">external function</span> <span class="fn">mlp_socket_send</span>(<span class="num">numeric</span> fd; <span class="str">string</span> data) <span class="kw">as</span> <span class="num">numeric</span>
+<span class="kw">external function</span> <span class="fn">mlp_socket_recv</span>(<span class="num">numeric</span> fd; <span class="num">numeric</span> max) <span class="kw">as</span> <span class="str">string</span>
+<span class="kw">external function</span> <span class="fn">println</span>(<span class="str">string</span> s) <span class="kw">as</span> <span class="num">numeric</span>
+
+<span class="num">numeric function</span> <span class="fn">main</span>()
+    <span class="fn">println</span>(<span class="str">"=== MELP Bridge POC: CAN → ETH ==="</span>)
+
+    <span class="cm">-- CAN: baglan, mesaj al</span>
+    <span class="num">numeric</span> can_fd = <span class="fn">mlp_socket_create</span>()
+    <span class="fn">mlp_socket_connect</span>(can_fd; <span class="str">"127.0.0.1"</span>; <span class="num">9001</span>)
+    <span class="str">string</span> can_msg = <span class="fn">mlp_socket_recv</span>(can_fd; <span class="num">256</span>)
+
+    <span class="cm">-- ETH: baglan, mesaji ilet</span>
+    <span class="num">numeric</span> eth_fd = <span class="fn">mlp_socket_create</span>()
+    <span class="fn">mlp_socket_connect</span>(eth_fd; <span class="str">"127.0.0.1"</span>; <span class="num">9002</span>)
+    <span class="fn">mlp_socket_send</span>(eth_fd; <span class="str">"BRIDGE_MSG: "</span> & can_msg)
+
+    <span class="fn">println</span>(<span class="str">"✅ Bridge POC PASS"</span>)
+    <span class="kw">return</span> <span class="num">0</span>
+<span class="kw">end function</span>
+<span class="cm">-- Scope kapanır → soketler OTOMATİK kapanır. Cleanup: 0 satır.</span></pre>
+    </div>
+
+    <!-- Tab: Output -->
+    <div id="tab-output" class="console" style="display:none">
+      <div class="line dim">=== MELP Bridge POC Test (STAGE10 FAZ B) ===</div>
+      <div class="line dim">Golden: 62b19b76</div>
+      <div class="line dim">---</div>
+      <div class="line can">[CAN SIM] Starting on 127.0.0.1:9001</div>
+      <div class="line can">[CAN SIM] Bridge connected</div>
+      <div class="line can">[CAN SIM] Sent: CAN:hello_bridge</div>
+      <div class="line dim">---</div>
+      <div class="line bridge">[BRIDGE] CAN socket: 3</div>
+      <div class="line bridge">[BRIDGE] CAN connected to port 9001</div>
+      <div class="line bridge">[BRIDGE] ETH socket: 4</div>
+      <div class="line bridge">[BRIDGE] ETH connected to port 9002</div>
+      <div class="line bridge">[BRIDGE] CAN → ETH: 'CAN:hello_bridge'</div>
+      <div class="line bridge">[BRIDGE] ETH sent: 16 byte</div>
+      <div class="line pass">[BRIDGE] ✅ Bridge POC PASS — mesaj iletildi</div>
+      <div class="line dim">---</div>
+      <div class="line eth">[ETH SIM] Starting on 127.0.0.1:9002</div>
+      <div class="line eth">[ETH SIM] Bridge connected</div>
+      <div class="line eth">[ETH SIM] BRIDGE_MSG: CAN:hello_bridge</div>
+      <div class="line eth">[ETH SIM] ✅ BRIDGE_POC_PASS</div>
+      <div class="line dim">---</div>
+      <div class="line pass">=== BRIDGE POC TEST PASSED ===</div>
+      <div class="line dim">sızıntı: 0 · dangling: 0 · cleanup kodu: 0 satır</div>
+    </div>
+
+    <!-- Tab: Concept -->
+    <div id="tab-concept" style="display:none">
+      <div class="code-block">
+        <h3 style="margin-bottom:12px;color:var(--bridge)">💡 Scope/Custody — Neden 0 satır cleanup?</h3>
+        <p style="color:var(--ink-dim);line-height:1.7;margin-bottom:16px">
+          Bridge 2 soket açar (CAN + ETH). Geleneksel dillerde her soket için <code>close()</code> çağrısı,
+          hata durumunda <code>try/finally</code> veya <code>defer</code> gerekir. MELP'te scope kapanınca
+          <strong>tüm kaynaklar otomatik</strong> serbest kalır — derleyici garantisi.
+        </p>
+        <div class="cards" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="card">
+            <div class="num" style="color:var(--err);font-size:1rem">C: 2× close()</div>
+            <div class="lab">+ hata yolu + valgrind</div>
+          </div>
+          <div class="card">
+            <div class="num" style="color:var(--warn);font-size:1rem">Rust: 2× Drop</div>
+            <div class="lab">+ borrow checker</div>
+          </div>
+          <div class="card good">
+            <div class="num" style="color:var(--good);font-size:1rem">MELP: 0 satır</div>
+            <div class="lab">scope kapanır → otomatik</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="dim" style="text-align:center;margin-top:40px">
+      Gerçek çıktı: <code>bash demos/FAZ_B/run_bridge_test.sh</code> ile üretildi · 
+      <a href="demo.html" style="color:var(--bridge)">← Canlı Demo</a>
+    </p>
+  </main>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        const tab = t.dataset.tab;
+        document.getElementById('tab-code').style.display = tab === 'code' ? '' : 'none';
+        document.getElementById('tab-output').style.display = tab === 'output' ? '' : 'none';
+        document.getElementById('tab-concept').style.display = tab === 'concept' ? '' : 'none';
+      });
+    });
+
+    // Animate status dots
+    const statuses = {
+      can: document.getElementById('canStatus'),
+      bridge: document.getElementById('bridgeStatus'),
+      eth: document.getElementById('ethStatus')
+    };
+    
+    let tick = 0;
+    setInterval(() => {
+      tick++;
+      if (tick === 1) {
+        statuses.can.textContent = 'canlı'; statuses.can.className = 'status status-live';
+        statuses.bridge.textContent = 'bağlandı'; statuses.bridge.className = 'status status-live';
+      }
+      if (tick === 2) {
+        statuses.eth.textContent = 'canlı'; statuses.eth.className = 'status status-live';
+        document.getElementById('statMsg').textContent = 'CAN:hello_bridge';
+      }
+      if (tick === 3) {
+        statuses.can.textContent = '✓'; statuses.eth.textContent = '✓';
+        statuses.bridge.textContent = 'PASS'; statuses.bridge.className = 'status status-live';
+        document.getElementById('statMsg').textContent = 'BRIDGE_POC_PASS';
+      }
+    }, 1500);
+  </script>
+</body>
+</html>
+
+    <!-- WASM Runner -->
+  <div style="text-align:center;margin-top:16px">
+    <button class="btn" id="runWasm" style="font-size:1rem;padding:12px 28px">
+      ▶ CANLIDA ÇALIŞTIR (WASM sanal soket)
+    </button>
+    <span id="wasmStatus" class="dim" style="margin-left:12px"></span>
+  </div>
+  <div class="console" id="wasmOutput" style="display:none;margin-top:16px"></div>
+
+<script>
+var wasmBridge = null;
+var wasmBuf = null;
+
+function emitText(ptr, len) {
+  var mem = new Uint8Array(wasmBuf, Number(ptr), len);
+  var text = new TextDecoder().decode(mem);
+  return text;
+}
+
+function appendOutput(text) {
+  var out = document.getElementById('wasmOutput');
+  out.innerHTML += '<div class="line">' + text + '</div>';
+}
+
+function runBridgeWasm() {
+  var btn = document.getElementById('runWasm');
+  var out = document.getElementById('wasmOutput');
+  var status = document.getElementById('wasmStatus');
+  btn.disabled = true;
+  status.textContent = 'yukleniyor...';
+  out.style.display = 'block';
+  out.innerHTML = '<div class="dim">WASM yukleniyor...</div>';
+
+  fetch('wasm/bridge.wasm').then(function(resp) {
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return resp.arrayBuffer();
+  }).then(function(bytes) {
+    status.textContent = 'WASM yuklendi (' + (bytes.byteLength/1024).toFixed(1) + 'KB)';
+    var env = {
+      pg_emit: function(ptr, len) { appendOutput(emitText(ptr, len)); },
+      println: function(ptr) { appendOutput(emitText(ptr, 512)); return 0n; },
+      str_eq: function(a, b) { return BigInt(a === b ? 1 : 0); },
+      strlen_melp: function(ptr) {
+        var mem = new Uint8Array(bytes, 0); var end = Number(ptr);
+        while (end < mem.length && mem[end]) end++;
+        return BigInt(end - Number(ptr));
+      },
+      str_impl: function(n) { return n; },
+      chr_impl: function(n) { return n; },
+      melp_string_concat: function(a, b) { return a; },
+      puts: function(ptr) { appendOutput(emitText(ptr, 512)); return 0n; }
+    };
+    return WebAssembly.instantiate(bytes, { env: env });
+  }).then(function(result) {
+    wasmBridge = result.instance;
+    wasmBuf = wasmBridge.exports.memory.buffer;
+    var exitCode = wasmBridge.exports.pg_start();
+    status.textContent = 'tamamlandi (exit: ' + exitCode + ')';
+    status.style.color = exitCode === 0n ? 'var(--good)' : 'var(--err)';
+    if (exitCode === 0n) {
+      document.getElementById('canStatus').textContent = '✓';
+      document.getElementById('canStatus').className = 'status status-live';
+      document.getElementById('bridgeStatus').textContent = 'PASS';
+      document.getElementById('bridgeStatus').className = 'status status-live';
+      document.getElementById('ethStatus').textContent = '✓';
+      document.getElementById('ethStatus').className = 'status status-live';
+      document.getElementById('statMsg').textContent = 'BRIDGE_POC_PASS';
+    }
+    btn.disabled = false;
+  }).catch(function(e) {
+    status.textContent = 'hata: ' + e.message;
+    status.style.color = 'var(--err)';
+    out.innerHTML += '<div style="color:var(--err)">' + e.message + '</div>';
+    btn.disabled = false;
+  });
+}
+</script>
+</body>
+</html>

@@ -5,9 +5,9 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const PORT = process.argv[2] || 8080;
-const STAGE9_DIR = '/home/pardus/PROJELER/MELP/LLVM/STAGE9';
+const STAGE10_DIR = '/home/pardus/PROJELER/MELP/LLVM/STAGE10';
 const WASM_DIR = '/home/pardus/PROJELER/MELP/ORTAK/WASM';
-const MELP_COMPILER = path.join(STAGE9_DIR, 'bin', 'melp_compiler');
+const MELP_COMPILER = path.join(STAGE10_DIR, 'bin', 'melp_compiler');
 const SHIM_C = path.join(WASM_DIR, 'shim_compiler_wasm.c');
 const EXAMPLES_DIR = path.join(__dirname, 'playground_examples');
 
@@ -28,7 +28,7 @@ function compileAndRun(melpCode, callback) {
         // Step 1: MELP → LLVM IR (STAGE9)
         try {
             fs.writeFileSync('/tmp/.melp_compile_src', melpCode);
-            execSync(`cd ${STAGE9_DIR} && export MELP_PATH=${STAGE9_DIR} && timeout 15 ${MELP_COMPILER} > ${llFile} 2>&1`, {timeout:20000});
+            execSync(`cd ${STAGE10_DIR} && export MELP_PATH=${STAGE10_DIR} && timeout 15 ${MELP_COMPILER} > ${llFile} 2>&1`, {timeout:20000});
         } catch(e) {
             const llOutput = fs.readFileSync(llFile,'utf-8').trim();
             callback(null, {error: formatMelpError(llOutput)});
@@ -99,13 +99,20 @@ function getExamples() {
 }
 
 const server = http.createServer((req, res) => {
+    // Static files
+    if (req.method === "GET" && /\.(wasm|js|css|html|png|ico|svg|woff2?|\.map)$$/.test(req.url)) {
+        const filePath = path.join(__dirname, req.url.split("?")[0]);
+        const ext = path.extname(filePath).toLowerCase();
+        const mime = { ".wasm":"application/wasm", ".js":"text/javascript", ".css":"text/css", ".html":"text/html", ".png":"image/png", ".ico":"image/x-icon" }[ext] || "text/plain";
+        serveFile(res, filePath, mime); return;
+    }
     res.setHeader('Access-Control-Allow-Origin','*');
     res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers','Content-Type');
     if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
     
     if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html'))
-        { serveFile(res, path.join(__dirname,'playground.html'), 'text/html; charset=utf-8'); return; }
+        { serveFile(res, path.join(__dirname,'demo.html'), 'text/html; charset=utf-8'); return; }
     if (req.method === 'GET' && req.url === '/melp_wasm.js')
         { serveFile(res, path.join(WASM_DIR,'melp_wasm.js'), 'application/javascript'); return; }
     if (req.method === 'GET' && req.url === '/api/examples') {
