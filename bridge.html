@@ -326,6 +326,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </button>
     <span id="wasmStatus" class="dim" style="margin-left:12px"></span>
   </div>
+  <div style="text-align:center;margin-top:8px" id="demoNote">
+    <span class="dim" style="font-size:0.78rem">⏱️ Görsel takip için süre yavaşlatılmıştır (demo modu). Gerçek çalışma: &lt; 1ms.</span>
+  </div>
   <div class="console" id="wasmOutput" style="display:none;margin-top:16px"></div>
 
 <script>
@@ -370,14 +373,9 @@ function runBridgeWasm() {
   var _queue = [];  // {cls, msg} or {action: fn, delay: ms}
   var _tBase = 0;
 
-  function _log(cls, msg)     { _queue.push({cls: cls, msg: msg}); }
   function _emit(cls, msg, delay) { _queue.push({cls: cls, msg: msg, delay: delay || 0}); }
   function _dom(delay, fn)    { _queue.push({delay: delay, action: fn}); }
-  function _label(msg)        { _queue.push({cls: 'dim', msg: msg}); }
 
-  // Explanation banner at top
-  _label('⏱️ Görsel takip için süre ~100 kat artırılmıştır (demo modu).');
-  _label('   Gerçek çalışma süresi: < 1ms (sanal soket, bellek içi).');
   _emit('dim', '---');
 
   fetch('wasm/bridge.wasm').then(function(resp) {
@@ -387,7 +385,7 @@ function runBridgeWasm() {
     status.textContent = 'WASM yuklendi (' + (bytes.byteLength/1024).toFixed(1) + 'KB)';
     _emit('dim', '🌉 MELP Bridge WASM başlatılıyor...');
     _emit('dim', 'Golden: 62b19b76 | STAGE10 FAZ B');
-    _label('---');
+    _emit('dim', '---');
     _emit('bridge', '🚀 pg_start() çağrılıyor...', 200);
 
     // WASM memory helpers — lazy init
@@ -510,7 +508,7 @@ function runBridgeWasm() {
     var exitCode = wasmBridge.exports.pg_start();
 
     // Add completion steps
-    _label('---');
+    _emit('dim', '---');
     if (exitCode === 0n) {
       _emit('pass', '🎉 BRIDGE POC TEST PASSED', 500);
       _emit('dim', 'sızıntı: 0 · dangling: 0 · cleanup kodu: 0 satır', 300);
