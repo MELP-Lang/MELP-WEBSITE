@@ -1,0 +1,9 @@
+1.3.0
+2026-07-21
+build_date: 2026-07-21
+source: STAGE10 (self-hosting, golden fddb08ad)
+size_wasm: 285KB
+clang: clang-22 --target=wasm32
+features: STAGE10 full — str, loop, struct, enum, match, scope
+known_issues: BigDecimal park, co=1 concat opt park
+notes: fddb08ad golden ile derlendi. KURAL 8/10/12 YESIL. Batarya 7/7.

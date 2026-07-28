@@ -1,11 +1,15 @@
-1.2.4
-2026-04-03
-build_date: 2026-04-03
-source: STAGE0/compiler/stage1/modules/wasm/wasm_codegen.cpp
-size_wasm: 616K
-size_js: 72K
-emcc: 3.1.69
-features: if,while,for,loop,struct,array,break,continue,binary_op,unary_op,function_call,print,enum,match,try_catch,lambda,spawn,string_concat
-known_issues: string+numeric mixed concat → invalid WASM (see PD_ESKALASYON_STRING_NUMERIC_CONCAT_BUG.md)
-missing: alertbox,timer_sleep
-notes: fib(40) ~1-2s in browser; timeout koruması app-web.js'te mevcut (10s)
+1.4.0
+2026-07-29
+build_date: 2026-07-29
+source: STAGE10 (self-hosting, golden 62b19b76)
+golden_md5: 62b19b76c899b2a22c570e1e09ae2d58
+size_wasm_playground: 2.2KB (playground_runner.wasm, golden fddb08ad)
+size_wasm_bridge: 1.1KB (bridge.wasm, golden 62b19b76 — yeni)
+clang: clang --target=wasm32
+features: STAGE10 full — str, loop, struct, enum, match, scope
+known_issues: BigDecimal park, co=1 concat opt park
+notes: |
+  bridge.wasm: 62b19b76 golden ile derlendi (sanal soket, 1.1KB).
+  playground_runner.wasm + demo_*.wasm: fddb08ad golden ile derlendi.
+  Geri dönüs: wasm/_backup_20260729/ altinda yedek.
+  KURAL 8/10/12: 62b19b76 icin YESIL (2026-07-28).
