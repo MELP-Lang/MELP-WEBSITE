@@ -244,27 +244,82 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
     <!-- Tab: Concept -->
     <div id="tab-concept" style="display:none">
-      <div class="code-block">
-        <h3 style="margin-bottom:12px;color:var(--bridge)">💡 Scope/Custody — Neden 0 satır cleanup?</h3>
-        <p style="color:var(--ink-dim);line-height:1.7;margin-bottom:16px">
-          Bridge 2 soket açar (CAN + ETH). Geleneksel dillerde her soket için <code>close()</code> çağrısı,
-          hata durumunda <code>try/finally</code> veya <code>defer</code> gerekir. MELP'te scope kapanınca
-          <strong>tüm kaynaklar otomatik</strong> serbest kalır — derleyici garantisi.
+      <div class="code-block" style="padding:20px">
+        <h3 style="margin-bottom:6px;color:var(--bridge)">💡 MELP farkı: Cleanup kodu YAZILMAZ</h3>
+        <p style="color:var(--ink-dim);line-height:1.7;margin-bottom:20px;font-size:0.88rem">
+          Aynı bridge mantığı. 4 dil. <strong style="color:var(--good)">Sadece MELP'te cleanup 0 satır.</strong>
+          Scope/custody modeli sayesinde kaynaklar scope kapanınca otomatik serbest kalır — 
+          <code style="color:var(--err)">close()</code>, <code style="color:var(--err)">defer</code>, 
+          <code style="color:var(--err)">Drop</code> yazılmaz. Derleyici garantisi. Sızıntı imkansız.
         </p>
-        <div class="cards" style="grid-template-columns:1fr 1fr 1fr">
-          <div class="card">
-            <div class="num" style="color:var(--err);font-size:1rem">C: 2× close()</div>
-            <div class="lab">+ hata yolu + valgrind</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+          <!-- C -->
+          <div style="background:rgba(248,81,73,0.06);border:1px solid rgba(248,81,73,0.2);border-radius:8px;padding:14px">
+            <div style="font-weight:700;color:var(--err);margin-bottom:6px">🔴 C</div>
+            <pre style="font-size:0.7rem;line-height:1.5;color:var(--ink);margin:0;white-space:pre-wrap"><span style="color:var(--ink-dim)">int can = socket(...);</span>
+<span style="color:var(--ink-dim)">connect(can, ...);</span>
+<span style="color:var(--ink-dim)">recv(can, buf, 256);</span>
+<span style="color:var(--ink-dim)">int eth = socket(...);</span>
+<span style="color:var(--ink-dim)">connect(eth, ...);</span>
+<span style="color:var(--ink-dim)">send(eth, buf, ...);</span>
+<span style="background:rgba(248,81,73,0.2)">close(can);  ← unutursan</span>
+<span style="background:rgba(248,81,73,0.2)">close(eth);  ← SIZINTI!</span>
+<span style="color:var(--ink-dim);font-size:0.65rem">+ hata yolu: 4 if() goto</span></pre>
+            <div style="margin-top:6px;font-size:0.7rem;color:var(--err)">⚠️ 2 manuel satır + valgrind</div>
           </div>
-          <div class="card">
-            <div class="num" style="color:var(--warn);font-size:1rem">Rust: 2× Drop</div>
-            <div class="lab">+ borrow checker</div>
+          <!-- Rust -->
+          <div style="background:rgba(210,153,34,0.06);border:1px solid rgba(210,153,34,0.2);border-radius:8px;padding:14px">
+            <div style="font-weight:700;color:var(--warn);margin-bottom:6px">🟡 Rust</div>
+            <pre style="font-size:0.7rem;line-height:1.5;color:var(--ink);margin:0;white-space:pre-wrap"><span style="color:var(--ink-dim)">let can = TcpStream::</span>
+<span style="color:var(--ink-dim)">  connect("...:9001")?;</span>
+<span style="color:var(--ink-dim)">let mut buf = [0;256];</span>
+<span style="color:var(--ink-dim)">can.read(&mut buf)?;</span>
+<span style="color:var(--ink-dim)">let eth = TcpStream::</span>
+<span style="color:var(--ink-dim)">  connect("...:9002")?;</span>
+<span style="color:var(--ink-dim)">eth.write(msg)?;</span>
+<span style="background:rgba(210,153,34,0.2)">} ← Drop calisir</span>
+<span style="color:var(--ink-dim);font-size:0.65rem">+ borrow checker ile</span>
+<span style="color:var(--ink-dim);font-size:0.65rem">  yasam suresi kavgasi</span></pre>
+            <div style="margin-top:6px;font-size:0.7rem;color:var(--warn)">🟡 Drop impl + borrow checker</div>
           </div>
-          <div class="card good">
-            <div class="num" style="color:var(--good);font-size:1rem">MELP: 0 satır</div>
-            <div class="lab">scope kapanır → otomatik</div>
+          <!-- Go -->
+          <div style="background:rgba(52,152,219,0.06);border:1px solid rgba(52,152,219,0.2);border-radius:8px;padding:14px">
+            <div style="font-weight:700;color:var(--eth);margin-bottom:6px">🔵 Go</div>
+            <pre style="font-size:0.7rem;line-height:1.5;color:var(--ink);margin:0;white-space:pre-wrap"><span style="color:var(--ink-dim)">can, _ := net.Dial(</span>
+<span style="color:var(--ink-dim)">  "tcp","...:9001")</span>
+<span style="background:rgba(52,152,219,0.2)">defer can.Close()  ←</span>
+<span style="color:var(--ink-dim)">buf := make([]byte,256)</span>
+<span style="color:var(--ink-dim)">can.Read(buf)</span>
+<span style="color:var(--ink-dim)">eth, _ := net.Dial(</span>
+<span style="color:var(--ink-dim)">  "tcp","...:9002")</span>
+<span style="background:rgba(52,152,219,0.2)">defer eth.Close()  ←</span>
+<span style="color:var(--ink-dim)">eth.Write(msg)</span></pre>
+            <div style="margin-top:6px;font-size:0.7rem;color:var(--eth)">🔵 2 defer + GC</div>
+          </div>
+          <!-- MELP -->
+          <div style="background:rgba(46,204,113,0.08);border:2px solid var(--bridge);border-radius:8px;padding:14px;position:relative">
+            <div style="position:absolute;top:-10px;right:10px;background:var(--bridge);color:#000;padding:2px 10px;border-radius:10px;font-size:0.65rem;font-weight:700">★ TEK FARK</div>
+            <div style="font-weight:700;color:var(--bridge);margin-bottom:6px">🟢 MELP</div>
+            <pre style="font-size:0.7rem;line-height:1.5;color:var(--ink);margin:0;white-space:pre-wrap"><span style="color:var(--ink-dim)">can = mlp_socket_create()</span>
+<span style="color:var(--ink-dim)">mlp_socket_connect(</span>
+<span style="color:var(--ink-dim)">  can,"...",9001)</span>
+<span style="color:var(--ink-dim)">msg = mlp_socket_recv(</span>
+<span style="color:var(--ink-dim)">  can, 256)</span>
+<span style="color:var(--ink-dim)">eth = mlp_socket_create()</span>
+<span style="color:var(--ink-dim)">mlp_socket_connect(</span>
+<span style="color:var(--ink-dim)">  eth,"...",9002)</span>
+<span style="color:var(--ink-dim)">mlp_socket_send(</span>
+<span style="color:var(--ink-dim)">  eth, "BRIDGE:" & msg)</span>
+<span style="background:rgba(46,204,113,0.25)">} ← OTOMATIK kapanir</span>
+<span style="color:var(--good)">✓ 0 cleanup satiri</span></pre>
+            <div style="margin-top:6px;font-size:0.75rem;color:var(--good);font-weight:700">✅ 0 satır · 0 sızıntı · 0 GC</div>
           </div>
         </div>
+        <p style="color:var(--ink-dim);margin-top:16px;font-size:0.82rem;text-align:center">
+          🧠 <strong>Scope/Custody:</strong> Derleyici her kaynağın sahibini bilir. Scope bitince → otomatik temizlik. 
+          C'deki <code>valgrind</code>, Rust'taki <code>borrow checker</code>, Go'daki <code>defer</code> → hepsi aynı sorunu çözer. 
+          <strong style="color:var(--bridge)">MELP: sorunu çözmez — sorun hiç OLUŞMAZ.</strong>
+        </p>
       </div>
     </div>
 
